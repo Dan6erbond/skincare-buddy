@@ -15,6 +15,8 @@ import {
   Button,
   Card,
   CardBody,
+  CardFooter,
+  CardHeader,
   Chip,
   DatePicker,
   Divider,
@@ -77,6 +79,12 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
   const queryClient = useQueryClient();
 
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
+  const {
+    isOpen: isFinishOpen,
+    onOpen: onFinishOpen,
+    onOpenChange: onFinishOpenChange,
+    onClose: onFinishClose,
+  } = useDisclosure();
   const addUnitModal = useDisclosure();
 
   const { data: product, isLoading } = useQuery({
@@ -126,6 +134,8 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.product(id) });
       onClose();
+      onFinishClose();
+      setActiveUnitId(null);
     },
   });
 
@@ -220,6 +230,20 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
     });
   });
 
+  const handleFinishedUnit = (unitId: string) => {
+    setActiveUnitId(unitId);
+    onFinishOpen();
+  };
+
+  const handleConfirmFinished = () => {
+    if (!activeUnitId) return;
+
+    updateUnit({
+      unitId: activeUnitId,
+      data: { finishedAt: new Date().toISOString() },
+    });
+  };
+
   return (
     <div className="container mx-auto px-6 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
       {/* Header Card */}
@@ -302,6 +326,7 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
                 unit={unit}
                 index={index}
                 onOpenAction={() => handleOpenUnit(unit.$id)}
+                onFinishAction={() => handleFinishedUnit(unit.$id)}
               />
             ))}
           </div>
@@ -379,6 +404,37 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
       </Modal>
 
       <Modal
+        isOpen={isFinishOpen}
+        onOpenChange={onFinishOpenChange}
+        backdrop="blur"
+      >
+        <ModalContent>
+          <ModalHeader className="uppercase font-bold">
+            Confirm Finished
+          </ModalHeader>
+          <ModalBody className="pb-8 gap-4">
+            <p className="text-small text-default-600">
+              Would you like to mark this as{" "}
+              <span className="font-bold">Finished</span>?
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onFinishClose}>
+              Cancel
+            </Button>
+            <Button
+              color="danger"
+              onPress={handleConfirmFinished}
+              isLoading={isUpdatingUnit}
+              className="font-bold uppercase"
+            >
+              Mark as Finished
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal
         isOpen={addUnitModal.isOpen}
         onOpenChange={addUnitModal.onOpenChange}
       >
@@ -417,10 +473,12 @@ function UnitCard({
   unit,
   index,
   onOpenAction,
+  onFinishAction,
 }: {
   unit: Units;
   index: number;
   onOpenAction: () => void;
+  onFinishAction: () => void;
 }) {
   const expiry = useMemo(() => getExpiryDate(unit), [unit]);
 
@@ -432,44 +490,48 @@ function UnitCard({
         unit.openedAt ? "bg-white" : "bg-default-100/50"
       }`}
     >
-      <CardBody className="p-4 gap-3">
-        <div className="flex justify-between items-start">
-          <div className="flex flex-col">
-            <span className="text-tiny font-black text-default-400 uppercase">
-              Unit #{index + 1}
-            </span>
-            <span className="text-medium font-bold">
-              {unit.purchaseDate
-                ? new Date(unit.purchaseDate).toLocaleDateString()
-                : "Unknown Purchase"}
-            </span>
-          </div>
-          {unit.openedAt ? (
-            <Tooltip
-              content={
-                expiry
+      <CardHeader className="flex justify-between items-start">
+        <div>
+          <p className="text-tiny font-black text-default-400 uppercase">
+            Unit #{index + 1}
+          </p>
+          <p className="text-medium font-bold">
+            {unit.purchaseDate
+              ? new Date(unit.purchaseDate).toLocaleDateString()
+              : "Unknown Purchase"}
+          </p>
+        </div>
+        {unit.openedAt ? (
+          <Tooltip
+            content={
+              unit.finishedAt
+                ? new Date(unit.finishedAt).toLocaleDateString()
+                : expiry
                   ? expiry.toLocaleDateString()
                   : new Date(unit.openedAt).toLocaleDateString()
+            }
+          >
+            <Chip
+              size="sm"
+              color={
+                unit.finishedAt ? "default" : isExpired ? "danger" : "success"
               }
+              variant="flat"
+              className="font-bold uppercase"
             >
-              <Chip
-                size="sm"
-                color={isExpired ? "danger" : "success"}
-                variant="flat"
-                className="font-bold"
-              >
-                {isExpired ? "EXPIRED" : "OPENED"}
-              </Chip>
-            </Tooltip>
-          ) : (
-            <Chip size="sm" variant="dot">
-              SEALED
+              {unit.finishedAt ? "Finished" : isExpired ? "Expired" : "Opened"}
             </Chip>
-          )}
-        </div>
+          </Tooltip>
+        ) : (
+          <Chip size="sm" variant="dot" className="uppercase">
+            Sealed
+          </Chip>
+        )}
+      </CardHeader>
 
-        <Divider className="opacity-50" />
+      <Divider />
 
+      <CardBody className="p-4 gap-3">
         <div className="space-y-2">
           <div className="flex justify-between text-tiny uppercase font-bold text-default-500">
             <span className="flex items-center gap-1">
@@ -482,7 +544,7 @@ function UnitCard({
             </span>
           </div>
 
-          {unit.openedAt ? (
+          {unit.openedAt && (
             <div className="flex justify-between text-tiny uppercase font-bold text-default-500">
               <span className="flex items-center gap-1">
                 <Clock size={12} /> PAO Expiry
@@ -491,19 +553,37 @@ function UnitCard({
                 {expiry?.toLocaleDateString()}
               </span>
             </div>
-          ) : (
-            <Button
-              size="sm"
-              color="primary"
-              variant="flat"
-              className="w-full font-bold uppercase mt-2"
-              onPress={onOpenAction}
-            >
-              Open Bottle
-            </Button>
           )}
         </div>
       </CardBody>
+
+      <CardFooter>
+        {unit.openedAt ? (
+          !unit.finishedAt && (
+            <>
+              <Button
+                size="sm"
+                color="danger"
+                variant="flat"
+                className="w-full font-bold uppercase mt-2"
+                onPress={onFinishAction}
+              >
+                Mark as Finished
+              </Button>
+            </>
+          )
+        ) : (
+          <Button
+            size="sm"
+            color="primary"
+            variant="flat"
+            className="w-full font-bold uppercase mt-2"
+            onPress={onOpenAction}
+          >
+            Open Bottle
+          </Button>
+        )}
+      </CardFooter>
     </Card>
   );
 }
