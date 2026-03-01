@@ -98,7 +98,8 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
           .map((step, index) => {
             const productList =
               (
-                (queryClient.getQueryData(["step", step.$id]) as Steps) ?? step
+                (queryClient.getQueryData(queryKeys.step(step.$id)) as Steps) ??
+                step
               ).products
                 ?.map((p) => `    - ${p.brand}: ${p.name} (${p.category})`)
                 .join("\n") || "    - No product assigned";
