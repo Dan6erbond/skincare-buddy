@@ -3,6 +3,7 @@ import "./globals.css";
 import { Geist, Lexend_Deca } from "next/font/google";
 
 import { APPWRITE_SESSION_KEY } from "@/lib/appwrite/const";
+import AppNavbar from "./navbar";
 import { AuthProvider } from "@/contexts/auth";
 import type { Metadata } from "next";
 import Providers from "./providers";
@@ -49,7 +50,10 @@ export default async function RootLayout({
     >
       <body>
         <AuthProvider user={user} session={session}>
-          <Providers>{children}</Providers>
+          <Providers>
+            <AppNavbar />
+            {children}
+          </Providers>
         </AuthProvider>
       </body>
     </html>
