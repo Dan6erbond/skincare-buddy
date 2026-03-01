@@ -31,6 +31,8 @@ export default function ProductSelect(props: Omit<SelectProps, "children">) {
         tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
         queries: [
           Query.equal("userId", user!.$id),
+          Query.orderAsc("name"),
+          Query.orderAsc("brand"),
           Query.offset(pageParam * limit),
           Query.limit(limit),
         ],
@@ -65,7 +67,7 @@ export default function ProductSelect(props: Omit<SelectProps, "children">) {
       scrollRef={scrollerRef}
       items={products}
       isOpen={isOpen}
-      onOpenChange={setIsOpen}
+      onOpenChange={setIsOpen} 
       {...props}
     >
       {
