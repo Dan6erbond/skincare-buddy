@@ -44,7 +44,12 @@ import {
   Steps,
 } from "@/lib/appwrite/appwrite";
 import { use, useCallback, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { ModelCreate } from "@/lib/appwrite/utils";
 import ProductSelect from "@/components/ui/product-select";
@@ -78,7 +83,22 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
     },
   });
 
-  const queryClient = useQueryClient();
+  const stepResults = useQueries({
+    queries:
+      routine?.regiment
+        ?.flatMap((r) => r.steps)
+        .map((step) => ({
+          queryKey: queryKeys.step(step.$id),
+          queryFn: async () => {
+            return await tables.getRow<Steps>({
+              databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+              tableId: process.env.NEXT_PUBLIC_STEPS_TABLE_ID!,
+              rowId: step.$id,
+              queries: [Query.select(["*", "products.*"])],
+            });
+          },
+        })) ?? [],
+  });
 
   const copyRoutineToAI = useCallback(() => {
     if (!routine) return;
@@ -98,8 +118,7 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
           .map((step, index) => {
             const productList =
               (
-                (queryClient.getQueryData(queryKeys.step(step.$id)) as Steps) ??
-                step
+                stepResults.find((r) => r.data?.$id === step.$id)?.data ?? step
               ).products
                 ?.map((p) => `    - ${p.brand}: ${p.name} (${p.category})`)
                 .join("\n") || "    - No product assigned";
@@ -130,7 +149,7 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
           color: "danger",
         });
       });
-  }, [routine, queryClient]);
+  }, [routine, stepResults]);
 
   if (isLoading)
     return (
