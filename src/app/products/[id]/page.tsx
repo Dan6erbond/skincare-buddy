@@ -24,6 +24,7 @@ import {
   ModalFooter,
   ModalHeader,
   Spinner,
+  Tooltip,
   useDisclosure,
 } from "@heroui/react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
@@ -457,14 +458,22 @@ function UnitCard({
             </span>
           </div>
           {unit.openedAt ? (
-            <Chip
-              size="sm"
-              color={isExpired ? "danger" : "success"}
-              variant="flat"
-              className="font-bold"
+            <Tooltip
+              content={
+                expiry
+                  ? expiry.toLocaleDateString()
+                  : new Date(unit.openedAt).toLocaleDateString()
+              }
             >
-              {isExpired ? "EXPIRED" : "OPENED"}
-            </Chip>
+              <Chip
+                size="sm"
+                color={isExpired ? "danger" : "success"}
+                variant="flat"
+                className="font-bold"
+              >
+                {isExpired ? "EXPIRED" : "OPENED"}
+              </Chip>
+            </Tooltip>
           ) : (
             <Chip size="sm" variant="dot">
               SEALED
