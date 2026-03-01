@@ -1,5 +1,7 @@
 "use client";
 
+import * as queryKeys from "@/lib/query/keys";
+
 import {
   AlertCircle,
   Calendar,
@@ -61,7 +63,7 @@ const OpenUnitSchema = z
     {
       message: "Please provide both duration and unit",
       path: ["periodAfterOpeningDuration"],
-    }
+    },
   );
 
 type OpenUnitValues = z.infer<typeof OpenUnitSchema>;
@@ -76,7 +78,7 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
   const addUnitModal = useDisclosure();
 
   const { data: product, isLoading } = useQuery({
-    queryKey: ["product", id],
+    queryKey: queryKeys.product(id),
     queryFn: () =>
       tables.getRow<Products>({
         databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
@@ -96,7 +98,7 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
   });
   const selectedUnit = useMemo(
     () => product?.units?.find((u) => u.$id === activeUnitId),
-    [product, activeUnitId]
+    [product, activeUnitId],
   );
 
   // Check if we need to show the PAO inputs
@@ -120,7 +122,7 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.product(id) });
       onClose();
     },
   });
@@ -159,7 +161,7 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.product(id) });
       addUnitModal.onClose();
       unitForm.reset();
     },
@@ -175,7 +177,7 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
       });
     },
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["product", id] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.product(id) }),
   });
 
   if (isLoading)

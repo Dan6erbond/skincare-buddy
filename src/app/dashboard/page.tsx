@@ -1,5 +1,7 @@
 "use client";
 
+import * as queryKeys from "@/lib/query/keys";
+
 import {
   AlertCircle,
   ArrowDownUp,
@@ -94,8 +96,8 @@ export default function Page() {
   ];
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products", user?.$id, sortDirections] as const,
-    queryFn: async ({ queryKey: [_, __, sortDirections] }) => {
+    queryKey: queryKeys.products(sortDirections),
+    queryFn: async ({ queryKey: [_, sortDirections] }) => {
       if (!user?.$id) return [];
 
       const orderQueries = Object.entries(sortDirections).map(([key, dir]) =>
@@ -164,7 +166,7 @@ export default function Page() {
   }, [products]);
 
   const { data: routines = [], isLoading: loadingRoutines } = useQuery({
-    queryKey: ["routines", user?.$id],
+    queryKey: queryKeys.routines(),
     queryFn: async () => {
       const res = await tables.listRows<Routines>({
         databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
@@ -187,7 +189,7 @@ export default function Page() {
         </div>
         <div className="flex gap-2">
           <CreateRoutineModal />
-          <CreateProductModal />
+          <CreateProductModal sortDirections={sortDirections} />
         </div>
       </header>
 
@@ -509,7 +511,11 @@ const categories = [
   { key: "lip-mask", label: "Lip mask" },
 ];
 
-function CreateProductModal() {
+function CreateProductModal({
+  sortDirections,
+}: {
+  sortDirections: Record<string, "asc" | "desc">;
+}) {
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
   const { tables } = useAppwrite();
   const { user } = useAuth();
@@ -568,7 +574,9 @@ function CreateProductModal() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products", user?.$id] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products(sortDirections),
+      });
       form.reset();
       onClose();
     },

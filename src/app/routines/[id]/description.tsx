@@ -1,5 +1,7 @@
 "use client";
 
+import * as queryKeys from "@/lib/query/keys";
+
 import { Button, Divider } from "@heroui/react";
 import {
   CHECK_LIST,
@@ -128,7 +130,9 @@ export function RoutineDescription({ routine }: RoutineDescriptionProps) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["routine", routine.$id] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.routine(routine.$id),
+      });
       setSaving(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 1500);

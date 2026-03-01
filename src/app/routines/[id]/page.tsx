@@ -1,5 +1,7 @@
 "use client";
 
+import * as queryKeys from "@/lib/query/keys";
+
 import {
   Button,
   Chip,
@@ -46,7 +48,7 @@ import { use, useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ModelCreate } from "@/lib/appwrite/utils";
-import { RoutineDescription } from "@/app/routes/[id]/description";
+import { RoutineDescription } from "./description";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -57,7 +59,7 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
 
   // 1. Fetch Routine with nested Regiments and Steps
   const { data: routine, isLoading } = useQuery({
-    queryKey: ["routine", id],
+    queryKey: queryKeys.routine(id),
     queryFn: async () => {
       return await tables.getRow<Routines>({
         databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
@@ -267,7 +269,7 @@ function CreateRegimentModal({ routineId }: { routineId: string }) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["routine", routineId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.routine(routineId) });
       onClose();
     },
   });
@@ -334,7 +336,7 @@ function CreateStepModal({ regimentId, routineId }: CreateStepModalProps) {
   const queryClient = useQueryClient();
 
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
-    queryKey: ["products", user?.$id],
+    queryKey: queryKeys.products(),
     queryFn: async () => {
       const res = await tables.listRows<Products>({
         databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
@@ -380,7 +382,7 @@ function CreateStepModal({ regimentId, routineId }: CreateStepModalProps) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["routine", routineId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.routine(routineId) });
       onClose();
       form.reset();
     },
@@ -490,7 +492,7 @@ function StepManager({
 
   // 1. Fetch deep step details (including products)
   const { data: step, isLoading } = useQuery({
-    queryKey: ["step", stepId],
+    queryKey: queryKeys.step(stepId),
     queryFn: async () => {
       return await tables.getRow<Steps>({
         databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
@@ -503,7 +505,7 @@ function StepManager({
 
   // 2. Fetch all products for the Select in the drawer
   const { data: allProducts = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: queryKeys.products(),
     queryFn: async () => {
       const res = await tables.listRows<Products>({
         databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
@@ -602,8 +604,8 @@ function StepSettingsDrawer({
     },
     onSuccess: () => {
       // Invalidate both the specific step and the parent routine
-      queryClient.invalidateQueries({ queryKey: ["step", step.$id] });
-      queryClient.invalidateQueries({ queryKey: ["routine", routineId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.step(step.$id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.routine(routineId) });
       onOpenChange(false);
     },
   });
@@ -618,7 +620,7 @@ function StepSettingsDrawer({
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["routine", routineId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.routine(routineId) });
       onOpenChange(false);
     },
   });
