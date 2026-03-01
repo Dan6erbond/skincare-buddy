@@ -122,9 +122,9 @@ export default function Page() {
             ...(search
               ? [
                   Query.or([
-                    Query.search("name", search),
-                    Query.search("brand", search),
-                    Query.search("category", search),
+                    Query.contains("name", search),
+                    Query.contains("brand", search),
+                    Query.contains("category", search),
                   ]),
                 ]
               : []),
