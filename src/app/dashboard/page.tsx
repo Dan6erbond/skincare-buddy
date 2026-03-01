@@ -413,7 +413,18 @@ export default function Page() {
                       const exp = unit.expiresAt
                         ? new Date(unit.expiresAt)
                         : null;
-                      if (!earliest || (exp && exp < earliest)) return exp;
+                      const pao = unit.paoExpiresAt
+                        ? new Date(unit.paoExpiresAt)
+                        : null;
+
+                      const unitEarliest =
+                        exp && pao ? (exp < pao ? exp : pao) : (exp ?? pao);
+
+                      if (
+                        !earliest ||
+                        (unitEarliest && unitEarliest < earliest)
+                      )
+                        return exp;
                       return earliest;
                     },
                     null,
