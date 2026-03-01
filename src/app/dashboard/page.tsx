@@ -74,6 +74,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LexicalRenderer } from "@/components/ui/rich-text";
 import Link from "next/link";
 import { ModelCreate } from "@/lib/appwrite/utils";
+import { getExpiryDate } from "@/lib/product/utils";
 import { getLocalTimeZone } from "@internationalized/date";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
@@ -410,21 +411,9 @@ export default function Page() {
                   // Logic to find earliest relevant expiry
                   const urgentDate = activeUnits.reduce(
                     (earliest: Date | null, unit) => {
-                      const exp = unit.expiresAt
-                        ? new Date(unit.expiresAt)
-                        : null;
-                      const pao = unit.paoExpiresAt
-                        ? new Date(unit.paoExpiresAt)
-                        : null;
+                      const exp = getExpiryDate(unit);
 
-                      const unitEarliest =
-                        exp && pao ? (exp < pao ? exp : pao) : (exp ?? pao);
-
-                      if (
-                        !earliest ||
-                        (unitEarliest && unitEarliest < earliest)
-                      )
-                        return exp;
+                      if (!earliest || (exp && exp < earliest)) return exp;
                       return earliest;
                     },
                     null,

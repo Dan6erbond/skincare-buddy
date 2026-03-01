@@ -42,6 +42,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ModelCreate } from "@/lib/appwrite/utils";
 import { ProductDescription } from "./description";
+import { getExpiryDate } from "@/lib/product/utils";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import z from "zod";
@@ -421,21 +422,7 @@ function UnitCard({
   index: number;
   onOpenAction: () => void;
 }) {
-  const expiry = useMemo(() => {
-    if (
-      !unit.openedAt ||
-      !unit.periodAfterOpeningDuration ||
-      !unit.periodAfterOpeningUnit
-    )
-      return null;
-    const date = new Date(unit.openedAt);
-    if (unit.periodAfterOpeningUnit === UnitsPeriodAfterOpeningUnit.MONTHS) {
-      date.setMonth(date.getMonth() + unit.periodAfterOpeningDuration);
-    } else {
-      date.setFullYear(date.getFullYear() + unit.periodAfterOpeningDuration);
-    }
-    return date;
-  }, [unit]);
+  const expiry = useMemo(() => getExpiryDate(unit), [unit]);
 
   const isExpired = expiry ? expiry < new Date() : false;
 
