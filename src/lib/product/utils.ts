@@ -18,5 +18,8 @@ export const getExpiryDate = (unit: Units) => {
     }
   }
 
-  return exp && pao ? (exp < pao ? exp : pao) : (exp ?? pao);
+  return (
+    [exp, pao].filter(Boolean).sort((a, b) => a!.getTime() - b!.getTime())[0] ??
+    null
+  );
 };
