@@ -21,7 +21,11 @@ export default function AppNavbar() {
 
   return (
     <Navbar isBordered maxWidth="xl">
-      <NavbarBrand as={Link} href="/dashboard" className="gap-2 group">
+      <NavbarBrand
+        as={Link}
+        href={user ? "/dashboard" : "/"}
+        className="gap-2 group"
+      >
         <div className="bg-primary/10 p-2 rounded-lg">
           <Beaker className="text-primary" size={20} />
         </div>
