@@ -178,7 +178,7 @@ export default function Page() {
 
   return (
     <div className="flex flex-col gap-8 p-4 md:p-8 container mx-auto w-full">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-end">
         <div>
           <h1 className="text-3xl font-bold uppercase tracking-tight flex items-center gap-2">
             My Vanity <Beaker className="text-primary" />
