@@ -38,7 +38,6 @@ import { Controller, useForm } from "react-hook-form";
 import { CreateStepSchema, CreateStepValues } from "@/lib/schema";
 import { ID, Permission, Query, Role } from "appwrite";
 import {
-  Products,
   Regiments,
   RegimentsType,
   Routines,
@@ -48,6 +47,7 @@ import { use, useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ModelCreate } from "@/lib/appwrite/utils";
+import ProductSelect from "@/components/ui/product-select";
 import { RoutineDescription } from "./description";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
@@ -335,22 +335,6 @@ function CreateStepModal({ regimentId, routineId }: CreateStepModalProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: products = [], isLoading: isLoadingProducts } = useQuery({
-    queryKey: queryKeys.products(),
-    queryFn: async () => {
-      const res = await tables.listRows<Products>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
-        queries: [
-          Query.equal("userId", user!.$id),
-          // We could also filter for only un-finished units here
-        ],
-      });
-      return res.rows;
-    },
-    enabled: isOpen, // Only fetch when the modal actually opens
-  });
-
   const form = useForm<CreateStepValues>({
     resolver: zodResolver(CreateStepSchema),
     defaultValues: { name: "", description: "", productIds: [] },
@@ -423,38 +407,17 @@ function CreateStepModal({ regimentId, routineId }: CreateStepModalProps) {
                   field: { value, onChange, ...field },
                   fieldState: { invalid, error },
                 }) => (
-                  <Select
+                  <ProductSelect
                     label="Products"
                     placeholder="Select formulas..."
                     selectionMode="multiple"
                     variant="bordered"
-                    isLoading={isLoadingProducts}
                     selectedKeys={new Set(value)}
-                    onSelectionChange={(keys) => {
-                      if (keys === "all") {
-                        onChange(products.map((p) => p.$id));
-                      } else {
-                        onChange(Array.from(keys as Set<string>));
-                      }
-                    }}
+                    onSelectionChange={(keys) => onChange(Array.from(keys))}
                     isInvalid={invalid}
                     errorMessage={error?.message}
                     {...field}
-                  >
-                    {products.map((p) => (
-                      <SelectItem
-                        key={p.$id}
-                        textValue={`${p.brand} ${p.name}`}
-                      >
-                        <div className="flex flex-col">
-                          <span className="text-small font-bold">{p.name}</span>
-                          <span className="text-tiny text-default-400">
-                            {p.brand}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </Select>
+                  />
                 )}
               />
             </ModalBody>
@@ -503,19 +466,6 @@ function StepManager({
     },
   });
 
-  // 2. Fetch all products for the Select in the drawer
-  const { data: allProducts = [] } = useQuery({
-    queryKey: queryKeys.products(),
-    queryFn: async () => {
-      const res = await tables.listRows<Products>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
-      });
-      return res.rows;
-    },
-    enabled: isOpen, // Only fetch when drawer is open
-  });
-
   if (isLoading) return <Skeleton className="h-20 w-full rounded-2xl" />;
   if (!step) return null;
 
@@ -552,7 +502,6 @@ function StepManager({
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         step={step}
-        allProducts={allProducts}
         routineId={routineId}
       />
     </>
@@ -563,13 +512,11 @@ function StepSettingsDrawer({
   isOpen,
   onOpenChange,
   step,
-  allProducts,
-  routineId, // Added this prop for cache invalidation
+  routineId,
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   step: Steps;
-  allProducts: Products[];
   routineId: string;
 }) {
   const { tables } = useAppwrite();
@@ -660,7 +607,7 @@ function StepSettingsDrawer({
                   field: { value, onChange, ...field },
                   fieldState: { invalid, error },
                 }) => (
-                  <Select
+                  <ProductSelect
                     label="Formulas in this step"
                     selectionMode="multiple"
                     variant="bordered"
@@ -669,21 +616,7 @@ function StepSettingsDrawer({
                     isInvalid={invalid}
                     errorMessage={error?.message}
                     {...field}
-                  >
-                    {allProducts.map((p) => (
-                      <SelectItem
-                        key={p.$id}
-                        textValue={`${p.brand} ${p.name}`}
-                      >
-                        <div className="flex flex-col">
-                          <span className="text-small font-bold">{p.name}</span>
-                          <span className="text-tiny text-default-400">
-                            {p.brand}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </Select>
+                  />
                 )}
               />
 

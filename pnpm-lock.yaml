@@ -11,6 +11,9 @@ importers:
       '@heroui/react':
         specifier: ^2.8.7
         version: 2.8.7(@types/react@19.2.8)(framer-motion@12.25.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.1.18)
+      '@heroui/use-infinite-scroll':
+        specifier: ^2.2.12
+        version: 2.2.12(react@19.2.3)
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.70.0(react@19.2.3))
@@ -793,6 +796,11 @@ packages:
 
   '@heroui/use-image@2.1.13':
     resolution: {integrity: sha512-NLApz+xin2bKHEXr+eSrtB0lN8geKP5VOea5QGbOCiHq4DBXu4QctpRkSfCHGIQzWdBVaLPoV+5wd0lR2S2Egg==}
+    peerDependencies:
+      react: '>=18 || >=19.0.0-rc.0'
+
+  '@heroui/use-infinite-scroll@2.2.12':
+    resolution: {integrity: sha512-5yIrw6aP9eH6iU+bQmfixb6QM4qvcwrW3g8jaZJ5ce94nebglLs131B7rSqF/UK8Bp7OXsBM3j1pdBZM7lo/MA==}
     peerDependencies:
       react: '>=18 || >=19.0.0-rc.0'
 
@@ -4526,6 +4534,11 @@ snapshots:
     dependencies:
       '@heroui/react-utils': 2.1.14(react@19.2.3)
       '@heroui/use-safe-layout-effect': 2.1.8(react@19.2.3)
+      react: 19.2.3
+
+  '@heroui/use-infinite-scroll@2.2.12(react@19.2.3)':
+    dependencies:
+      '@heroui/shared-utils': 2.1.12
       react: 19.2.3
 
   '@heroui/use-intersection-observer@2.2.14(react@19.2.3)':

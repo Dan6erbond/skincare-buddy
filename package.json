@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@heroui/react": "^2.8.7",
+    "@heroui/use-infinite-scroll": "^2.2.12",
     "@hookform/resolvers": "^5.2.2",
     "@internationalized/date": "3.10.1",
     "@lexical/code": "^0.39.0",
