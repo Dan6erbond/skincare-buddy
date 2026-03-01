@@ -1,19 +1,19 @@
 export function products(): ["products"];
 
-export function products(
-  sortDirections: Record<string, "asc" | "desc">,
-  page: number,
-  search: string,
-): ["products", Record<string, "asc" | "desc">, number, string];
+export function products(props: {
+  sortDirections: Record<string, "asc" | "desc">;
+  page: number;
+  perPage: number;
+  search: string;
+}): ["products", typeof props];
 
-export function products(
-  sortDirections?: Record<string, "asc" | "desc">,
-  page?: number,
-  search?: string,
-) {
-  return sortDirections
-    ? ["products", sortDirections, page, search]
-    : ["products"];
+export function products(props?: {
+  sortDirections: Record<string, "asc" | "desc">;
+  page: number;
+  perPage: number;
+  search: string;
+}) {
+  return props ? ["products", props] : ["products"];
 }
 
 export const product = (id: string) => ["products", id] as const;

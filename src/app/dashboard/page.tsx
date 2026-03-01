@@ -106,8 +106,10 @@ export default function Page() {
 
   const { data: { rows: products = [], total = 0 } = {}, isLoading } = useQuery(
     {
-      queryKey: queryKeys.products(sortDirections, page, search),
-      queryFn: async ({ queryKey: [_, sortDirections, page, search] }) => {
+      queryKey: queryKeys.products({ sortDirections, page, perPage, search }),
+      queryFn: async ({
+        queryKey: [_, { sortDirections, page, perPage, search }],
+      }) => {
         if (!user?.$id) return {} as Models.RowList<Products>;
 
         const orderQueries = Object.entries(sortDirections).map(([key, dir]) =>
