@@ -1,0 +1,511 @@
+"use client";
+
+import {
+  AlertCircle,
+  Calendar,
+  Clock,
+  FlaskConical,
+  Package,
+  Plus,
+  Star,
+} from "lucide-react";
+import {
+  Button,
+  Card,
+  CardBody,
+  Chip,
+  DatePicker,
+  Divider,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  Spinner,
+  useDisclosure,
+} from "@heroui/react";
+import { Controller, FormProvider, useForm } from "react-hook-form";
+import { ID, Permission, Query, Role } from "appwrite";
+import { PAOInputs, UnitFormFields } from "@/components/forms/unit";
+import {
+  Products,
+  Units,
+  UnitsPeriodAfterOpeningUnit,
+} from "@/lib/appwrite/appwrite";
+import { UnitFormValues, UnitSchema, calendarDateSchema } from "@/lib/schema";
+import { getLocalTimeZone, parseDate } from "@internationalized/date";
+import { use, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { ModelCreate } from "@/lib/appwrite/utils";
+import { ProductDescription } from "./description";
+import { useAppwrite } from "@/contexts/appwrite";
+import { useAuth } from "@/contexts/auth";
+import z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const OpenUnitSchema = z
+  .object({
+    openedAt: calendarDateSchema,
+    periodAfterOpeningDuration: z.number().min(1).nullish(),
+    periodAfterOpeningUnit: z.enum(UnitsPeriodAfterOpeningUnit).nullish(),
+  })
+  .refine(
+    (data) => {
+      // If one is present, both must be present
+      if (data.periodAfterOpeningDuration || data.periodAfterOpeningUnit) {
+        return data.periodAfterOpeningDuration && data.periodAfterOpeningUnit;
+      }
+      return true;
+    },
+    {
+      message: "Please provide both duration and unit",
+      path: ["periodAfterOpeningDuration"],
+    }
+  );
+
+type OpenUnitValues = z.infer<typeof OpenUnitSchema>;
+
+export default function Page({ params }: PageProps<"/products/[id]">) {
+  const { id } = use(params);
+  const { user } = useAuth();
+  const { tables } = useAppwrite();
+  const queryClient = useQueryClient();
+
+  const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
+  const addUnitModal = useDisclosure();
+
+  const { data: product, isLoading } = useQuery({
+    queryKey: ["product", id],
+    queryFn: () =>
+      tables.getRow<Products>({
+        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+        tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
+        rowId: id,
+        queries: [Query.select(["*", "units.*"])],
+      }),
+  });
+
+  // Track which unit we are currently "opening" in the modal
+  const [activeUnitId, setActiveUnitId] = useState<string | null>(null);
+  const openForm = useForm<OpenUnitValues>({
+    resolver: zodResolver(OpenUnitSchema),
+    defaultValues: {
+      openedAt: parseDate(new Date().toISOString().split("T")[0]),
+    },
+  });
+  const selectedUnit = useMemo(
+    () => product?.units?.find((u) => u.$id === activeUnitId),
+    [product, activeUnitId]
+  );
+
+  // Check if we need to show the PAO inputs
+  const needsPAO =
+    !selectedUnit?.periodAfterOpeningDuration ||
+    !selectedUnit?.periodAfterOpeningUnit;
+
+  const { mutate: updateUnit, isPending: isUpdatingUnit } = useMutation({
+    mutationFn: async ({
+      unitId,
+      data,
+    }: {
+      unitId: string;
+      data: Partial<Units>;
+    }) => {
+      return await tables.updateRow<Units>({
+        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+        tableId: process.env.NEXT_PUBLIC_UNITS_TABLE_ID!,
+        rowId: unitId,
+        data,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      onClose();
+    },
+  });
+
+  const unitForm = useForm<UnitFormValues>({
+    resolver: zodResolver(UnitSchema),
+    defaultValues: {
+      purchaseDate: null,
+      expiresAt: null,
+    },
+  });
+
+  const { mutate: createUnit, isPending: isCreatingUnit } = useMutation({
+    mutationFn: async (values: UnitFormValues) => {
+      return await tables.createRow<
+        Omit<ModelCreate<Units>, "product"> & { product: string }
+      >({
+        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+        tableId: process.env.NEXT_PUBLIC_UNITS_TABLE_ID!,
+        rowId: ID.unique(),
+        data: {
+          product: id,
+          purchaseDate:
+            values.purchaseDate?.toDate(getLocalTimeZone()).toISOString() ??
+            null,
+          expiresAt:
+            values.expiresAt?.toDate(getLocalTimeZone()).toISOString() ?? null,
+          periodAfterOpeningDuration: values.periodAfterOpeningDuration,
+          periodAfterOpeningUnit: values.periodAfterOpeningUnit,
+        },
+        permissions: [
+          Permission.read(Role.user(user!.$id)),
+          Permission.update(Role.user(user!.$id)),
+          Permission.delete(Role.user(user!.$id)),
+        ],
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      addUnitModal.onClose();
+      unitForm.reset();
+    },
+  });
+
+  const { mutate: updateRating } = useMutation({
+    mutationFn: async (newRating: number) => {
+      return await tables.updateRow<Products>({
+        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+        tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
+        rowId: id,
+        data: { rating: newRating },
+      });
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["product", id] }),
+  });
+
+  if (isLoading)
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  if (!product)
+    return (
+      <div className="text-center py-20">
+        <AlertCircle className="mx-auto" />
+        <h1>Product not found</h1>
+      </div>
+    );
+
+  const handleOpenUnit = (unitId: string) => {
+    setActiveUnitId(unitId);
+    onOpen();
+  };
+
+  const handleConfirmOpen = openForm.handleSubmit((values) => {
+    if (!activeUnitId) return;
+
+    const updateData: Partial<Units> = {
+      openedAt: values.openedAt.toDate(getLocalTimeZone()).toISOString(),
+    };
+
+    // If the unit was missing PAO info, save what the user entered
+    if (needsPAO) {
+      updateData.periodAfterOpeningDuration = values.periodAfterOpeningDuration;
+      updateData.periodAfterOpeningUnit = values.periodAfterOpeningUnit;
+    }
+
+    updateUnit({
+      unitId: activeUnitId,
+      data: updateData,
+    });
+  });
+
+  return (
+    <div className="container mx-auto px-6 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
+      {/* Header Card */}
+      <Card className="p-4 shadow-sm border-none bg-default-50/50">
+        <CardBody className="gap-6">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <FlaskConical className="text-primary" size={20} />
+                <span className="text-tiny font-bold text-primary uppercase tracking-widest">
+                  Formula
+                </span>
+              </div>
+              <h1 className="text-4xl font-black uppercase tracking-tight">
+                {product.name}
+              </h1>
+              <p className="text-xl text-default-500 font-medium">
+                {product.brand}
+              </p>
+
+              {/* Star Rating */}
+              <div className="flex items-center gap-1 pt-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={20}
+                    onClick={() => updateRating(star)}
+                    className="cursor-pointer transition-transform hover:scale-110"
+                    fill={
+                      (product.rating ?? 0) >= star ? "#F5A623" : "transparent"
+                    }
+                    stroke={
+                      (product.rating ?? 0) >= star ? "#F5A623" : "#A1A1AA"
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end gap-2">
+              <Chip variant="shadow" color="secondary" className="font-bold">
+                {product.category.toUpperCase()}
+              </Chip>
+              <div className="text-right">
+                <p className="text-tiny text-default-400 uppercase font-bold">
+                  Market Price
+                </p>
+                <p className="text-2xl font-black text-default-700">
+                  ${product.price.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Units Inventory */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+              <Package size={22} className="text-primary" /> Inventory Units
+            </h2>
+            <Button
+              onPress={addUnitModal.onOpen}
+              size="sm"
+              color="primary"
+              variant="flat"
+              startContent={<Plus size={16} />}
+              className="font-bold uppercase"
+            >
+              Add Unit
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {product.units?.map((unit, index) => (
+              <UnitCard
+                key={unit.$id}
+                unit={unit}
+                index={index}
+                onOpenAction={() => handleOpenUnit(unit.$id)}
+              />
+            ))}
+          </div>
+
+          <ProductDescription product={product} />
+        </div>
+
+        {/* Right Column: Collection Stats / Quick Actions */}
+        <div className="space-y-6">
+          <Card className="bg-primary text-primary-foreground p-2">
+            <CardBody className="text-center gap-1">
+              <p className="text-tiny uppercase font-bold opacity-80">
+                Total Investment
+              </p>
+              <p className="text-3xl font-black">
+                ${((product.units?.length || 0) * product.price).toFixed(2)}
+              </p>
+            </CardBody>
+          </Card>
+          {/* Add additional collection-wide metadata here */}
+        </div>
+      </div>
+
+      {/* Opening Confirmation Modal */}
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
+        <ModalContent>
+          <FormProvider {...openForm}>
+            <form onSubmit={handleConfirmOpen}>
+              <ModalHeader className="uppercase font-bold">
+                Confirm Opening
+              </ModalHeader>
+              <ModalBody className="pb-8 gap-4">
+                <p className="text-small text-default-600">
+                  Marking this as <span className="font-bold">Opened</span>{" "}
+                  starts the countdown.
+                </p>
+
+                <Controller
+                  name="openedAt"
+                  control={openForm.control}
+                  render={({ field }) => (
+                    <DatePicker
+                      {...field}
+                      label="Opening Date"
+                      variant="flat"
+                    />
+                  )}
+                />
+
+                {needsPAO && (
+                  <div className="p-4 bg-primary-50/50 rounded-xl border-1 border-primary-100 space-y-3">
+                    <p className="text-tiny font-black uppercase text-primary tracking-widest">
+                      Set Missing PAO Details
+                    </p>
+                    <PAOInputs getName={(name) => name} variant="bordered" />
+                  </div>
+                )}
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="primary"
+                  type="submit"
+                  isLoading={isUpdatingUnit}
+                  className="font-bold uppercase"
+                >
+                  Start Timer
+                </Button>
+              </ModalFooter>
+            </form>
+          </FormProvider>
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={addUnitModal.isOpen}
+        onOpenChange={addUnitModal.onOpenChange}
+      >
+        <ModalContent>
+          <form onSubmit={unitForm.handleSubmit((data) => createUnit(data))}>
+            <ModalHeader className="uppercase font-black">
+              Add New Unit
+            </ModalHeader>
+            <ModalBody>
+              <FormProvider {...unitForm}>
+                {/* index 0 because it's a single unit form, not an array */}
+                <UnitFormFields />
+              </FormProvider>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="light" onPress={addUnitModal.onClose}>
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                type="submit"
+                isLoading={isCreatingUnit}
+                className="font-bold"
+              >
+                Save Unit
+              </Button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
+    </div>
+  );
+}
+
+function UnitCard({
+  unit,
+  index,
+  onOpenAction,
+}: {
+  unit: Units;
+  index: number;
+  onOpenAction: () => void;
+}) {
+  const expiry = useMemo(() => {
+    if (
+      !unit.openedAt ||
+      !unit.periodAfterOpeningDuration ||
+      !unit.periodAfterOpeningUnit
+    )
+      return null;
+    const date = new Date(unit.openedAt);
+    if (unit.periodAfterOpeningUnit === UnitsPeriodAfterOpeningUnit.MONTHS) {
+      date.setMonth(date.getMonth() + unit.periodAfterOpeningDuration);
+    } else {
+      date.setFullYear(date.getFullYear() + unit.periodAfterOpeningDuration);
+    }
+    return date;
+  }, [unit]);
+
+  const isExpired = expiry ? expiry < new Date() : false;
+
+  return (
+    <Card
+      className={`border-none shadow-sm ${
+        unit.openedAt ? "bg-white" : "bg-default-100/50"
+      }`}
+    >
+      <CardBody className="p-4 gap-3">
+        <div className="flex justify-between items-start">
+          <div className="flex flex-col">
+            <span className="text-tiny font-black text-default-400 uppercase">
+              Unit #{index + 1}
+            </span>
+            <span className="text-medium font-bold">
+              {unit.purchaseDate
+                ? new Date(unit.purchaseDate).toLocaleDateString()
+                : "Unknown Purchase"}
+            </span>
+          </div>
+          {unit.openedAt ? (
+            <Chip
+              size="sm"
+              color={isExpired ? "danger" : "success"}
+              variant="flat"
+              className="font-bold"
+            >
+              {isExpired ? "EXPIRED" : "OPENED"}
+            </Chip>
+          ) : (
+            <Chip size="sm" variant="dot">
+              SEALED
+            </Chip>
+          )}
+        </div>
+
+        <Divider className="opacity-50" />
+
+        <div className="space-y-2">
+          <div className="flex justify-between text-tiny uppercase font-bold text-default-500">
+            <span className="flex items-center gap-1">
+              <Calendar size={12} /> Factory Expiry
+            </span>
+            <span className="text-default-700">
+              {unit.expiresAt
+                ? new Date(unit.expiresAt).toLocaleDateString()
+                : "N/A"}
+            </span>
+          </div>
+
+          {unit.openedAt ? (
+            <div className="flex justify-between text-tiny uppercase font-bold text-default-500">
+              <span className="flex items-center gap-1">
+                <Clock size={12} /> PAO Expiry
+              </span>
+              <span className={isExpired ? "text-danger" : "text-primary"}>
+                {expiry?.toLocaleDateString()}
+              </span>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              color="primary"
+              variant="flat"
+              className="w-full font-bold uppercase mt-2"
+              onPress={onOpenAction}
+            >
+              Open Bottle
+            </Button>
+          )}
+        </div>
+      </CardBody>
+    </Card>
+  );
+}

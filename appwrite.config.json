@@ -1,0 +1,395 @@
+{
+    "projectId": "skincare-buddy",
+    "endpoint": "https://fra.cloud.appwrite.io/v1",
+    "projectName": "Skincare Buddy",
+    "settings": {
+        "services": {
+            "account": true,
+            "avatars": true,
+            "databases": true,
+            "locale": true,
+            "health": true,
+            "storage": true,
+            "teams": true,
+            "users": true,
+            "sites": true,
+            "functions": true,
+            "graphql": true,
+            "messaging": true
+        },
+        "auth": {
+            "methods": {
+                "jwt": true,
+                "phone": true,
+                "invites": true,
+                "anonymous": true,
+                "email-otp": true,
+                "magic-url": true,
+                "email-password": true
+            },
+            "security": {
+                "duration": 31536000,
+                "limit": 0,
+                "sessionsLimit": 10,
+                "passwordHistory": 0,
+                "passwordDictionary": false,
+                "personalDataCheck": false,
+                "sessionAlerts": false,
+                "mockNumbers": []
+            }
+        }
+    },
+    "tablesDB": [
+        {
+            "$id": "skincare-buddy",
+            "name": "Skincare Buddy",
+            "enabled": true
+        }
+    ],
+    "tables": [
+        {
+            "$id": "products",
+            "$permissions": [
+                "create(\"users\")"
+            ],
+            "databaseId": "skincare-buddy",
+            "name": "products",
+            "enabled": true,
+            "rowSecurity": true,
+            "columns": [
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "brand",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "category",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "lastUsed",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "price",
+                    "type": "double",
+                    "required": true,
+                    "array": false,
+                    "min": 0,
+                    "max": 10000,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "rating",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": 0,
+                    "max": 5,
+                    "default": null
+                },
+                {
+                    "key": "description",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 128000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "units",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "units",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "product",
+                    "onDelete": "cascade",
+                    "side": "child"
+                },
+                {
+                    "key": "steps",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "steps",
+                    "relationType": "manyToMany",
+                    "twoWay": true,
+                    "twoWayKey": "products",
+                    "onDelete": "setNull",
+                    "side": "child"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "units",
+            "$permissions": [
+                "create(\"users\")"
+            ],
+            "databaseId": "skincare-buddy",
+            "name": "units",
+            "enabled": true,
+            "rowSecurity": true,
+            "columns": [
+                {
+                    "key": "purchaseDate",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "expiresAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "periodAfterOpeningDuration",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": null
+                },
+                {
+                    "key": "periodAfterOpeningUnit",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "elements": [
+                        "months",
+                        "years"
+                    ],
+                    "format": "enum",
+                    "default": null
+                },
+                {
+                    "key": "openedAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "paoExpiresAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "finishedAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "product",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "products",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "units",
+                    "onDelete": "cascade",
+                    "side": "parent"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "routines",
+            "$permissions": [],
+            "databaseId": "skincare-buddy",
+            "name": "routines",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 128,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "description",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 128000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "regiment",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "regiments",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "routine",
+                    "onDelete": "cascade",
+                    "side": "child"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "regiments",
+            "$permissions": [],
+            "databaseId": "skincare-buddy",
+            "name": "regiments",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "type",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "elements": [
+                        "morning",
+                        "night"
+                    ],
+                    "format": "enum",
+                    "default": null
+                },
+                {
+                    "key": "steps",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "steps",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "regiment",
+                    "onDelete": "cascade",
+                    "side": "child"
+                },
+                {
+                    "key": "routine",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "routines",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "regiment",
+                    "onDelete": "cascade",
+                    "side": "parent"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "steps",
+            "$permissions": [],
+            "databaseId": "skincare-buddy",
+            "name": "steps",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 128,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "description",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 128000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "products",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "products",
+                    "relationType": "manyToMany",
+                    "twoWay": true,
+                    "twoWayKey": "steps",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "regiment",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "regiments",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "steps",
+                    "onDelete": "cascade",
+                    "side": "parent"
+                }
+            ],
+            "indexes": []
+        }
+    ]
+}

@@ -1,0 +1,26 @@
+{
+  "tailwindCSS.classAttributes": [
+    "class",
+    "className",
+    "ngClass",
+    "class:list",
+    "tw"
+  ],
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "files.associations": {
+    "*.css": "postcss"
+  },
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "advisely",
+      "group": "advisely",
+      "database": "advisely",
+      "username": "advisely"
+    }
+  ]
+}
