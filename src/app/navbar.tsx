@@ -45,7 +45,6 @@ export default function AppNavbar() {
                 color="primary"
                 name={user?.name}
                 size="sm"
-                src={`https://ui-avatars.com/api/?name=${user.name}&background=random`}
               />
             </DropdownTrigger>
             <DropdownMenu aria-label="Profile Actions" variant="flat">

@@ -197,9 +197,7 @@ export default function Page() {
         color="primary"
         variant="underlined"
         classNames={{
-          tabList: "gap-6",
-          cursor: "w-full bg-primary",
-          tab: "max-w-fit px-0 h-12",
+          tab: "h-12",
         }}
       >
         <Tab

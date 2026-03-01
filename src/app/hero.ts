@@ -23,8 +23,8 @@ export default heroui({
       colors: {
         primary: {
           ...rose,
-          foreground: readableColor(rose[500]),
-          DEFAULT: rose[500],
+          foreground: readableColor(rose[700]),
+          DEFAULT: rose[600],
         },
         secondary: {
           ...teal,
@@ -37,8 +37,8 @@ export default heroui({
       colors: {
         primary: {
           ...rose,
-          foreground: readableColor(rose[500]),
-          DEFAULT: rose[500],
+          foreground: readableColor(rose[700]),
+          DEFAULT: rose[600],
         },
         secondary: {
           ...teal,
