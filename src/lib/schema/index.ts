@@ -8,9 +8,15 @@ export const calendarDateSchema = z.custom<CalendarDate>(
 );
 
 export const UnitSchema = z.object({
-  purchaseDate: calendarDateSchema.nullish(),
-  expiresAt: calendarDateSchema.nullish(),
-  openedAt: calendarDateSchema.nullish(),
+  purchaseDate: calendarDateSchema
+    .nullish()
+    .refine((val) => (val ? val.year > 1970 : true)),
+  expiresAt: calendarDateSchema
+    .nullish()
+    .refine((val) => (val ? val.year > 1970 : true)),
+  openedAt: calendarDateSchema
+    .nullish()
+    .refine((val) => (val ? val.year > 1970 : true)),
   periodAfterOpeningDuration: z.number().nullish(),
   periodAfterOpeningUnit: z
     .enum(UnitsPeriodAfterOpeningUnit)

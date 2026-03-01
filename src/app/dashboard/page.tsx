@@ -14,6 +14,7 @@ import {
   ListTodo,
   Package,
   Plus,
+  Search,
   Sparkles,
   Star,
   Tag,
@@ -76,6 +77,7 @@ import { ModelCreate } from "@/lib/appwrite/utils";
 import { getLocalTimeZone } from "@internationalized/date";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
+import { useDebounceValue } from "usehooks-ts";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -83,6 +85,8 @@ export default function Page() {
   const { user } = useAuth();
   const { tables } = useAppwrite();
   const now = useMemo(() => new Date(), []);
+
+  const [search, setSearch] = useDebounceValue("", 500);
 
   const [perPage, setPerPage] = useState(25);
   const [page, setPage] = useState(1);
@@ -101,8 +105,8 @@ export default function Page() {
 
   const { data: { rows: products = [], total = 0 } = {}, isLoading } = useQuery(
     {
-      queryKey: queryKeys.products(sortDirections, page),
-      queryFn: async ({ queryKey: [_, sortDirections, page] }) => {
+      queryKey: queryKeys.products(sortDirections, page, search),
+      queryFn: async ({ queryKey: [_, sortDirections, page, search] }) => {
         if (!user?.$id) return {} as Models.RowList<Products>;
 
         const orderQueries = Object.entries(sortDirections).map(([key, dir]) =>
@@ -114,6 +118,15 @@ export default function Page() {
           tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
           queries: [
             Query.equal("userId", user.$id),
+            ...(search
+              ? [
+                  Query.or([
+                    Query.search("name", search),
+                    Query.search("brand", search),
+                    Query.search("category", search),
+                  ]),
+                ]
+              : []),
             Query.select(["*", "units.*"]),
             ...orderQueries,
             Query.orderAsc("$updatedAt"),
@@ -241,7 +254,14 @@ export default function Page() {
 
             <Table
               topContent={
-                <div className="flex justify-end">
+                <div className="flex justify-end items-end gap-4">
+                  <Input
+                    label="Search..."
+                    startContent={<Search className="size-5" />}
+                    size="sm"
+                    onValueChange={setSearch}
+                  />
+
                   <Dropdown>
                     <DropdownTrigger>
                       <Button
@@ -666,16 +686,21 @@ function CreateProductModal() {
                   <Controller
                     name="category"
                     control={form.control}
-                    render={({ field }) => (
+                    render={({
+                      field: { value, ...field },
+                      fieldState: { invalid, error },
+                    }) => (
                       <Select
                         {...field}
                         label="Category"
                         variant="bordered"
                         labelPlacement="outside"
-                        selectedKeys={[field.value]}
+                        selectedKeys={[value]}
                         onSelectionChange={(k) =>
                           field.onChange(Array.from(k)[0])
                         }
+                        isInvalid={invalid}
+                        errorMessage={error?.message}
                       >
                         {categories.map((cat) => (
                           <SelectItem key={cat.key}>{cat.label}</SelectItem>
@@ -686,13 +711,19 @@ function CreateProductModal() {
                   <Controller
                     name="price"
                     control={form.control}
-                    render={({ field }) => (
+                    render={({
+                      field: { value, onChange, ...field },
+                      fieldState: { invalid, error },
+                    }) => (
                       <NumberInput
                         label="Price"
                         variant="bordered"
                         labelPlacement="outside"
-                        onValueChange={field.onChange}
-                        value={field.value}
+                        onValueChange={onChange}
+                        value={value}
+                        isInvalid={invalid}
+                        errorMessage={error?.message}
+                        {...field}
                       />
                     )}
                   />
@@ -743,22 +774,32 @@ function CreateProductModal() {
                         <Controller
                           name={`units.${index}.purchaseDate`}
                           control={form.control}
-                          render={({ field }) => (
+                          render={({
+                            field,
+                            fieldState: { invalid, error },
+                          }) => (
                             <DatePicker
                               {...field}
                               label="Purchase Date"
                               size="sm"
+                              isInvalid={invalid}
+                              errorMessage={error?.message}
                             />
                           )}
                         />
                         <Controller
                           name={`units.${index}.expiresAt`}
                           control={form.control}
-                          render={({ field }) => (
+                          render={({
+                            field,
+                            fieldState: { invalid, error },
+                          }) => (
                             <DatePicker
                               {...field}
                               label="Expiry Date"
                               size="sm"
+                              isInvalid={invalid}
+                              errorMessage={error?.message}
                             />
                           )}
                         />
@@ -769,12 +810,18 @@ function CreateProductModal() {
                           <Controller
                             name={`units.${index}.periodAfterOpeningDuration`}
                             control={form.control}
-                            render={({ field }) => (
+                            render={({
+                              field: { value, onChange, ...field },
+                              fieldState: { invalid, error },
+                            }) => (
                               <NumberInput
                                 label="PAO Duration"
                                 size="sm"
-                                onValueChange={field.onChange}
-                                value={field.value ?? undefined}
+                                onValueChange={onChange}
+                                value={value ?? undefined}
+                                isInvalid={invalid}
+                                errorMessage={error?.message}
+                                {...field}
                               />
                             )}
                           />
@@ -782,15 +829,21 @@ function CreateProductModal() {
                         <Controller
                           name={`units.${index}.periodAfterOpeningUnit`}
                           control={form.control}
-                          render={({ field }) => (
+                          render={({
+                            field: { value, onChange, ...field },
+                            fieldState: { invalid, error },
+                          }) => (
                             <Select
                               label="Unit"
                               size="sm"
                               className="w-32"
-                              selectedKeys={field.value ? [field.value] : []}
+                              selectedKeys={value ? [value] : []}
                               onSelectionChange={(k) =>
-                                field.onChange(Array.from(k)[0])
+                                onChange(Array.from(k)[0])
                               }
+                              isInvalid={invalid}
+                              errorMessage={error?.message}
+                              {...field}
                             >
                               <SelectItem key="months">Months</SelectItem>
                               <SelectItem key="years">Years</SelectItem>

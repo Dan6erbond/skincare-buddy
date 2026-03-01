@@ -3,13 +3,17 @@ export function products(): ["products"];
 export function products(
   sortDirections: Record<string, "asc" | "desc">,
   page: number,
-): ["products", Record<string, "asc" | "desc">, number];
+  search: string,
+): ["products", Record<string, "asc" | "desc">, number, string];
 
 export function products(
   sortDirections?: Record<string, "asc" | "desc">,
   page?: number,
+  search?: string,
 ) {
-  return sortDirections ? ["products", sortDirections, page] : ["products"];
+  return sortDirections
+    ? ["products", sortDirections, page, search]
+    : ["products"];
 }
 
 export const product = (id: string) => ["products", id] as const;
