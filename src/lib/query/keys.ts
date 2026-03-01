@@ -2,10 +2,14 @@ export function products(): ["products"];
 
 export function products(
   sortDirections: Record<string, "asc" | "desc">,
-): ["products", Record<string, "asc" | "desc">];
+  page: number,
+): ["products", Record<string, "asc" | "desc">, number];
 
-export function products(sortDirections?: Record<string, "asc" | "desc">) {
-  return sortDirections ? ["products", sortDirections] : ["products"];
+export function products(
+  sortDirections?: Record<string, "asc" | "desc">,
+  page?: number,
+) {
+  return sortDirections ? ["products", sortDirections, page] : ["products"];
 }
 
 export const product = (id: string) => ["products", id] as const;

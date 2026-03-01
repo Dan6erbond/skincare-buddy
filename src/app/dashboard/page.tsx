@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import {
   Button,
+  ButtonGroup,
   Card,
   CardBody,
   Chip,
@@ -38,6 +39,7 @@ import {
   ModalFooter,
   ModalHeader,
   NumberInput,
+  Pagination,
   Select,
   SelectItem,
   Tab,
@@ -59,7 +61,7 @@ import {
   ProductFormValues,
   ProductSchema,
 } from "@/lib/schema";
-import { ID, Permission, Query, Role } from "appwrite";
+import { ID, Models, Permission, Query, Role } from "appwrite";
 import {
   Products,
   Routines,
@@ -82,6 +84,9 @@ export default function Page() {
   const { tables } = useAppwrite();
   const now = useMemo(() => new Date(), []);
 
+  const [perPage, setPerPage] = useState(25);
+  const [page, setPage] = useState(1);
+
   const [sortDirections, setSortDirections] = useState<
     Record<string, "asc" | "desc">
   >({});
@@ -94,30 +99,35 @@ export default function Page() {
     { key: "rating", label: "Rating", icon: <Star size={16} /> },
   ];
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: queryKeys.products(sortDirections),
-    queryFn: async ({ queryKey: [_, sortDirections] }) => {
-      if (!user?.$id) return [];
+  const { data: { rows: products = [], total = 0 } = {}, isLoading } = useQuery(
+    {
+      queryKey: queryKeys.products(sortDirections, page),
+      queryFn: async ({ queryKey: [_, sortDirections, page] }) => {
+        if (!user?.$id) return {} as Models.RowList<Products>;
 
-      const orderQueries = Object.entries(sortDirections).map(([key, dir]) =>
-        dir === "desc" ? Query.orderDesc(key) : Query.orderAsc(key),
-      );
+        const orderQueries = Object.entries(sortDirections).map(([key, dir]) =>
+          dir === "desc" ? Query.orderDesc(key) : Query.orderAsc(key),
+        );
 
-      const res = await tables.listRows<Products>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
-        queries: [
-          Query.equal("userId", user.$id),
-          Query.select(["*", "units.*"]),
-          ...orderQueries,
-          Query.orderAsc("$updatedAt"),
-          Query.orderAsc("$createdAt"),
-        ],
-      });
-      return res.rows;
+        const res = await tables.listRows<Products>({
+          databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+          tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
+          queries: [
+            Query.equal("userId", user.$id),
+            Query.select(["*", "units.*"]),
+            ...orderQueries,
+            Query.orderAsc("$updatedAt"),
+            Query.orderAsc("$createdAt"),
+            Query.offset((page - 1) * perPage),
+            Query.limit(perPage),
+          ],
+        });
+
+        return res;
+      },
+      enabled: !!user?.$id,
     },
-    enabled: !!user?.$id,
-  });
+  );
 
   const copyInventoryToAI = useCallback(() => {
     if (!products.length) {
@@ -188,7 +198,7 @@ export default function Page() {
         </div>
         <div className="flex gap-2">
           <CreateRoutineModal />
-          <CreateProductModal sortDirections={sortDirections} />
+          <CreateProductModal />
         </div>
       </header>
 
@@ -312,6 +322,40 @@ export default function Page() {
                       })}
                     </DropdownMenu>
                   </Dropdown>
+                </div>
+              }
+              bottomContent={
+                <div className="flex justify-between">
+                  <div className="flex gap-2 items-center">
+                    <p>Per page</p>
+                    <ButtonGroup variant="ghost" size="sm">
+                      <Button
+                        variant={perPage === 10 ? "faded" : undefined}
+                        onPress={() => setPerPage(10)}
+                      >
+                        10
+                      </Button>
+                      <Button
+                        variant={perPage === 25 ? "faded" : undefined}
+                        onPress={() => setPerPage(25)}
+                      >
+                        25
+                      </Button>
+                      <Button
+                        variant={perPage === 100 ? "faded" : undefined}
+                        onPress={() => setPerPage(100)}
+                      >
+                        100
+                      </Button>
+                    </ButtonGroup>
+                  </div>
+                  {Math.ceil(total / perPage) > 1 && (
+                    <Pagination
+                      total={Math.ceil(total / perPage)}
+                      page={page}
+                      onChange={setPage}
+                    />
+                  )}
                 </div>
               }
               aria-label="Inventory"
@@ -502,11 +546,7 @@ const categories = [
   { key: "lip-mask", label: "Lip mask" },
 ];
 
-function CreateProductModal({
-  sortDirections,
-}: {
-  sortDirections: Record<string, "asc" | "desc">;
-}) {
+function CreateProductModal() {
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
   const { tables } = useAppwrite();
   const { user } = useAuth();
@@ -566,7 +606,7 @@ function CreateProductModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.products(sortDirections),
+        queryKey: queryKeys.products(),
       });
       form.reset();
       onClose();
