@@ -11,7 +11,6 @@ import {
   Bookmark,
   ChevronRight,
   DollarSign,
-  Eye,
   ListTodo,
   Package,
   Plus,
@@ -335,9 +334,6 @@ export default function Page() {
                 <TableColumn className="uppercase tracking-wider">
                   Price
                 </TableColumn>
-                <TableColumn className="uppercase tracking-wider text-center">
-                  Details
-                </TableColumn>
               </TableHeader>
               <TableBody
                 items={products}
@@ -364,13 +360,20 @@ export default function Page() {
                   return (
                     <TableRow
                       key={product.$id}
-                      className="border-b border-divider last:border-none"
+                      className="border-b border-divider last:border-none cursor-pointer hover:bg-content2"
+                      as={Link}
+                      href={`/products/${product.$id}`}
                     >
                       <TableCell>
                         <User
                           name={product.name}
                           description={product.brand}
-                          avatarProps={{ radius: "md", color: "primary" }}
+                          avatarProps={{
+                            radius: "md",
+                            color: "primary",
+                            size: "sm",
+                            className: "shrink-0 rounded-full",
+                          }}
                         />
                       </TableCell>
                       <TableCell>
@@ -425,16 +428,6 @@ export default function Page() {
                         </div>
                       </TableCell>
                       <TableCell>{product.price.toLocaleString()}</TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          as={Link}
-                          isIconOnly
-                          variant="light"
-                          href={`/products/${product.$id}`}
-                        >
-                          <Eye size={18} />
-                        </Button>
-                      </TableCell>
                     </TableRow>
                   );
                 }}
