@@ -347,6 +347,15 @@ export default function Page() {
               }
               bottomContent={
                 <div className="flex justify-between">
+                  <div>
+                    {Math.ceil(total / perPage) > 1 && (
+                      <Pagination
+                        total={Math.ceil(total / perPage)}
+                        page={page}
+                        onChange={setPage}
+                      />
+                    )}
+                  </div>
                   <div className="flex gap-2 items-center">
                     <p>Per page</p>
                     <ButtonGroup variant="ghost" size="sm">
@@ -370,13 +379,6 @@ export default function Page() {
                       </Button>
                     </ButtonGroup>
                   </div>
-                  {Math.ceil(total / perPage) > 1 && (
-                    <Pagination
-                      total={Math.ceil(total / perPage)}
-                      page={page}
-                      onChange={setPage}
-                    />
-                  )}
                 </div>
               }
               aria-label="Inventory"
