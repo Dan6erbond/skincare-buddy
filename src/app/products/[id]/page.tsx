@@ -6,10 +6,11 @@ import {
   AlertCircle,
   Calendar,
   Clock,
+  Edit3,
   FlaskConical,
+  Heart,
   Package,
   Plus,
-  Star,
 } from "lucide-react";
 import {
   Button,
@@ -20,31 +21,47 @@ import {
   Chip,
   DatePicker,
   Divider,
+  Input,
   Modal,
   ModalBody,
   ModalContent,
   ModalFooter,
   ModalHeader,
+  Select,
+  SelectItem,
   Spinner,
   Tooltip,
+  addToast,
   useDisclosure,
 } from "@heroui/react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { ID, Permission, Query, Role } from "appwrite";
 import { PAOInputs, UnitFormFields } from "@/components/forms/unit";
 import {
+  ProductFormValues,
+  ProductSchema,
+  UnitFormValues,
+  UnitSchema,
+  calendarDateSchema,
+} from "@/lib/schema";
+import {
   Products,
   Units,
   UnitsPeriodAfterOpeningUnit,
 } from "@/lib/appwrite/appwrite";
-import { UnitFormValues, UnitSchema, calendarDateSchema } from "@/lib/schema";
+import { databaseId, tableIds } from "@/lib/appwrite/const";
 import { getLocalTimeZone, parseDate } from "@internationalized/date";
 import { use, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { AddToWishlistModal } from "@/components/wishlist/add-modal";
+import { ArchiveProductModal } from "@/components/product/archive-modal";
 import { ModelCreate } from "@/lib/appwrite/utils";
 import { ProductDescription } from "./description";
+import { Rating } from "@/components/ui/rating";
+import { categories } from "@/lib/product/const";
 import { getExpiryDate } from "@/lib/product/utils";
+import { useAddToWishlist } from "@/hooks/use-add-to-wishlist";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import z from "zod";
@@ -86,6 +103,7 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
     onClose: onFinishClose,
   } = useDisclosure();
   const addUnitModal = useDisclosure();
+  const wishlistPrompt = useDisclosure();
 
   const { data: product, isLoading } = useQuery({
     queryKey: queryKeys.product(id),
@@ -131,12 +149,27 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
         data,
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, { unitId, data }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.product(id) });
       onClose();
       onFinishClose();
       setActiveUnitId(null);
+
+      if (!data.finishedAt) return;
+
+      const remainingUnits = product?.units?.filter(
+        (u) => u.$id !== unitId && !u.finishedAt,
+      );
+
+      if (!remainingUnits?.length) {
+        wishlistPrompt.onOpen();
+      }
     },
+  });
+
+  const addToWishlist = useAddToWishlist({
+    product,
+    onSuccess: wishlistPrompt.onClose,
   });
 
   const unitForm = useForm<UnitFormValues>({
@@ -257,30 +290,25 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
                   Formula
                 </span>
               </div>
-              <h1 className="text-4xl font-black uppercase tracking-tight">
-                {product.name}
-              </h1>
+              <div className="flex gap-4 items-center">
+                <h1 className="text-4xl font-black uppercase tracking-tight">
+                  {product.name}
+                </h1>
+                <div className="flex items-center gap-1">
+                  <AddToWishlistModal product={product} />
+                  <EditProductModal product={product} />
+                  <ArchiveProductModal product={product} />
+                </div>
+              </div>
               <p className="text-xl text-default-500 font-medium">
                 {product.brand}
               </p>
 
               {/* Star Rating */}
-              <div className="flex items-center gap-1 pt-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    size={20}
-                    onClick={() => updateRating(star)}
-                    className="cursor-pointer transition-transform hover:scale-110"
-                    fill={
-                      (product.rating ?? 0) >= star ? "#F5A623" : "transparent"
-                    }
-                    stroke={
-                      (product.rating ?? 0) >= star ? "#F5A623" : "#A1A1AA"
-                    }
-                  />
-                ))}
-              </div>
+              <Rating
+                value={product.rating ?? 0}
+                onChange={(star) => updateRating(star)}
+              />
             </div>
 
             <div className="flex flex-col items-end gap-2">
@@ -465,7 +493,206 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
           </form>
         </ModalContent>
       </Modal>
+
+      <Modal
+        isOpen={wishlistPrompt.isOpen}
+        onOpenChange={wishlistPrompt.onOpenChange}
+        backdrop="blur"
+      >
+        <ModalContent>
+          <ModalHeader className="uppercase font-black italic tracking-tighter text-2xl text-primary">
+            Empty Bottle!
+          </ModalHeader>
+          <ModalBody>
+            <div className="flex flex-col gap-4">
+              <p className="text-default-600">
+                That was your last unit of{" "}
+                <span className="font-bold text-foreground">
+                  {product.name}
+                </span>
+                . Would you like to add it to your wishlist so you don&apos;t
+                forget to restock?
+              </p>
+              <div className="bg-content2 p-3 rounded-xl flex items-center gap-3 border-1 border-content3">
+                <div className="p-2 bg-primary-100 rounded-lg text-primary">
+                  <Heart size={20} fill="currentColor" />
+                </div>
+                <div>
+                  <p className="text-tiny text-default-500 uppercase font-bold">
+                    Recommended Action
+                  </p>
+                  <p className="text-small font-semibold">Move to Wishlist</p>
+                </div>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={wishlistPrompt.onClose}>
+              Maybe Later
+            </Button>
+            <Button
+              color="primary"
+              variant="shadow"
+              isLoading={addToWishlist.isPending}
+              onPress={() => addToWishlist.mutate()}
+              startContent={<Heart size={18} />}
+              className="font-bold uppercase"
+            >
+              Add to Wishlist
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
+  );
+}
+
+interface EditProductModalProps {
+  product: Products;
+}
+
+function EditProductModal({ product }: EditProductModalProps) {
+  const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
+  const queryClient = useQueryClient();
+  const { tables } = useAppwrite();
+
+  const form = useForm<ProductFormValues>({
+    resolver: zodResolver(ProductSchema),
+    defaultValues: {
+      name: product.name,
+      brand: product.brand,
+      category: product.category,
+      price: product.price,
+    },
+  });
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (values: ProductFormValues) => {
+      return await tables.updateRow({
+        databaseId,
+        tableId: tableIds.products,
+        rowId: product.$id,
+        data: {
+          name: values.name,
+          brand: values.brand,
+          category: values.category,
+          price: values.price,
+        },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.products() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.product(product.$id),
+      });
+      addToast({
+        title: "Formula Updated",
+        description: "Changes saved successfully.",
+        color: "success",
+      });
+      onClose();
+    },
+  });
+
+  return (
+    <>
+      <Tooltip content="Edit">
+        <Button
+          isIconOnly
+          variant="light"
+          size="sm"
+          onPress={onOpen}
+          className="text-default-400 hover:text-primary transition-colors"
+        >
+          <Edit3 size={18} />
+        </Button>
+      </Tooltip>
+
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="xl">
+        <ModalContent>
+          {(onClose) => (
+            <form onSubmit={form.handleSubmit((data) => mutate(data))}>
+              <ModalHeader className="uppercase font-black italic tracking-tighter text-2xl">
+                Edit Formula
+              </ModalHeader>
+              <ModalBody className="gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    {...form.register("brand")}
+                    label="Brand"
+                    variant="bordered"
+                    labelPlacement="outside"
+                    isInvalid={!!form.formState.errors.brand}
+                    errorMessage={form.formState.errors.brand?.message}
+                  />
+                  <Input
+                    {...form.register("name")}
+                    label="Product Name"
+                    variant="bordered"
+                    labelPlacement="outside"
+                    isInvalid={!!form.formState.errors.name}
+                    errorMessage={form.formState.errors.name?.message}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Controller
+                    name="category"
+                    control={form.control}
+                    render={({
+                      field: { value, onChange, ...field },
+                      fieldState: { invalid, error },
+                    }) => (
+                      <Select
+                        {...field}
+                        label="Category"
+                        variant="bordered"
+                        labelPlacement="outside"
+                        selectedKeys={[value]}
+                        onSelectionChange={(k) => onChange(Array.from(k)[0])}
+                        isInvalid={invalid}
+                        errorMessage={error?.message}
+                      >
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.key}>{cat.label}</SelectItem>
+                        ))}
+                      </Select>
+                    )}
+                  />
+                  <Controller
+                    name="price"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input
+                        type="number"
+                        label="Price"
+                        variant="bordered"
+                        labelPlacement="outside"
+                        value={field.value.toString()}
+                        onValueChange={(v) => field.onChange(parseFloat(v))}
+                      />
+                    )}
+                  />
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  Discard
+                </Button>
+                <Button
+                  color="primary"
+                  type="submit"
+                  isLoading={isPending}
+                  className="font-bold uppercase"
+                >
+                  Save Changes
+                </Button>
+              </ModalFooter>
+            </form>
+          )}
+        </ModalContent>
+      </Modal>
+    </>
   );
 }
 

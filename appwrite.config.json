@@ -151,9 +151,63 @@
                     "twoWayKey": "products",
                     "onDelete": "setNull",
                     "side": "child"
+                },
+                {
+                    "key": "archivedAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "wishlistProducts",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "wishlist_products",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "product",
+                    "onDelete": "cascade",
+                    "side": "child"
                 }
             ],
-            "indexes": []
+            "indexes": [
+                {
+                    "key": "name_fts_index",
+                    "type": "fulltext",
+                    "status": "available",
+                    "columns": [
+                        "name"
+                    ],
+                    "orders": [
+                        "asc"
+                    ]
+                },
+                {
+                    "key": "brand_fts_index",
+                    "type": "fulltext",
+                    "status": "available",
+                    "columns": [
+                        "brand"
+                    ],
+                    "orders": [
+                        "asc"
+                    ]
+                },
+                {
+                    "key": "category_fts_index",
+                    "type": "fulltext",
+                    "status": "available",
+                    "columns": [
+                        "category"
+                    ],
+                    "orders": [
+                        "asc"
+                    ]
+                }
+            ]
         },
         {
             "$id": "units",
@@ -243,11 +297,13 @@
         },
         {
             "$id": "routines",
-            "$permissions": [],
+            "$permissions": [
+                "create(\"users\")"
+            ],
             "databaseId": "skincare-buddy",
             "name": "routines",
             "enabled": true,
-            "rowSecurity": false,
+            "rowSecurity": true,
             "columns": [
                 {
                     "key": "userId",
@@ -293,11 +349,13 @@
         },
         {
             "$id": "regiments",
-            "$permissions": [],
+            "$permissions": [
+                "create(\"users\")"
+            ],
             "databaseId": "skincare-buddy",
             "name": "regiments",
             "enabled": true,
-            "rowSecurity": false,
+            "rowSecurity": true,
             "columns": [
                 {
                     "key": "type",
@@ -340,11 +398,13 @@
         },
         {
             "$id": "steps",
-            "$permissions": [],
+            "$permissions": [
+                "create(\"users\")"
+            ],
             "databaseId": "skincare-buddy",
             "name": "steps",
             "enabled": true,
-            "rowSecurity": false,
+            "rowSecurity": true,
             "columns": [
                 {
                     "key": "name",
@@ -385,6 +445,29 @@
                     "relationType": "manyToOne",
                     "twoWay": true,
                     "twoWayKey": "steps",
+                    "onDelete": "cascade",
+                    "side": "parent"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "wishlist_products",
+            "$permissions": [],
+            "databaseId": "skincare-buddy",
+            "name": "wishlist_products",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "product",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "products",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "wishlistProducts",
                     "onDelete": "cascade",
                     "side": "parent"
                 }

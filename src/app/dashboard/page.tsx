@@ -3,15 +3,21 @@
 import * as queryKeys from "@/lib/query/keys";
 
 import {
+  ActivityIcon,
   AlertCircle,
+  Archive,
   ArrowDownUp,
   ArrowDownWideNarrow,
   ArrowUpNarrowWide,
   Beaker,
   Bookmark,
+  Box,
   ChevronRight,
   DollarSign,
+  FlaskConical,
+  Heart,
   ListTodo,
+  MoreHorizontal,
   Package,
   Plus,
   Search,
@@ -43,6 +49,8 @@ import {
   Pagination,
   Select,
   SelectItem,
+  Skeleton,
+  Switch,
   Tab,
   Table,
   TableBody,
@@ -55,6 +63,13 @@ import {
   addToast,
   useDisclosure,
 } from "@heroui/react";
+import {
+  ComponentType,
+  ReactNode,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import {
   CreateRoutineSchema,
@@ -67,13 +82,17 @@ import {
   Products,
   Routines,
   UnitsPeriodAfterOpeningUnit,
+  WishlistProducts,
 } from "@/lib/appwrite/appwrite";
-import { useCallback, useMemo, useState } from "react";
+import { databaseId, tableIds } from "@/lib/appwrite/const";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { AddToWishlistModal } from "@/components/wishlist/add-modal";
 import { LexicalRenderer } from "@/components/ui/rich-text";
 import Link from "next/link";
 import { ModelCreate } from "@/lib/appwrite/utils";
+import { Rating } from "@/components/ui/rating";
+import { categories } from "@/lib/product/const";
 import { getExpiryDate } from "@/lib/product/utils";
 import { getLocalTimeZone } from "@internationalized/date";
 import { useAppwrite } from "@/contexts/appwrite";
@@ -82,11 +101,20 @@ import { useDebounceValue } from "usehooks-ts";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+type ColumnDef = {
+  key: string;
+  label: string;
+  icon: ReactNode;
+  Cell: ComponentType<{ product: Products }>;
+};
+
 export default function Page() {
   const { user } = useAuth();
   const { tables } = useAppwrite();
+  const queryClient = useQueryClient();
   const now = useMemo(() => new Date(), []);
 
+  const [showArchived, setShowArchived] = useState(false);
   const [search, setSearch] = useDebounceValue("", 500);
 
   const [perPage, setPerPage] = useState(25);
@@ -96,24 +124,176 @@ export default function Page() {
     Record<string, "asc" | "desc">
   >({});
 
-  const sortOptions = [
-    { key: "brand", label: "Brand", icon: <Bookmark size={16} /> },
-    { key: "name", label: "Name", icon: <Type size={16} /> },
-    { key: "category", label: "Category", icon: <Tag size={16} /> },
-    { key: "price", label: "Price", icon: <DollarSign size={16} /> },
-    {
-      key: "rating",
-      label: "Rating",
-      icon: <Star size={16} />,
-      defaultDesc: true,
-    },
-  ];
+  const sortOptions = useMemo(
+    () =>
+      [
+        { key: "brand", label: "Brand", icon: <Bookmark size={16} /> },
+        { key: "name", label: "Name", icon: <Type size={16} /> },
+        { key: "category", label: "Category", icon: <Tag size={16} /> },
+        { key: "price", label: "Price", icon: <DollarSign size={16} /> },
+        {
+          key: "rating",
+          label: "Rating",
+          icon: <Star size={16} />,
+          defaultDesc: true,
+        },
+        {
+          key: "archivedAt",
+          label: "Archived at",
+          icon: <Archive size={16} />,
+        },
+      ].filter(({ key }) => (showArchived ? true : key !== "archivedAt")),
+    [showArchived],
+  );
+
+  const activeColumns = useMemo(() => {
+    const columns: ColumnDef[] = [
+      {
+        key: "formula",
+        label: "Formula",
+        icon: <FlaskConical size={16} />,
+        Cell: ({ product }) => (
+          <User
+            name={product.name}
+            description={product.brand}
+            avatarProps={{
+              radius: "md",
+              color: "primary",
+              size: "sm",
+              className: "shrink-0 rounded-full",
+            }}
+          />
+        ),
+      },
+      {
+        key: "category",
+        label: "Category",
+        icon: <Tag size={16} />,
+        Cell: ({ product }) => (
+          <Chip
+            size="sm"
+            variant="flat"
+            color="secondary"
+            className="uppercase font-bold"
+          >
+            {product.category}
+          </Chip>
+        ),
+      },
+      {
+        key: "inventory",
+        label: "Inventory",
+        icon: <Box size={16} />,
+        Cell: ({ product }) => {
+          const activeUnits = product.units?.filter((u) => !u.finishedAt) || [];
+
+          return (
+            <div className="flex items-center gap-2">
+              <Package size={14} className="text-default-400" />
+              <span className="font-semibold">{activeUnits.length} Units</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: "status",
+        label: "Status",
+        icon: <ActivityIcon size={16} />,
+        Cell: ({ product }) => {
+          const activeUnits = product.units?.filter((u) => !u.finishedAt) || [];
+          const openedUnit = activeUnits.find((u) => u.openedAt);
+          const urgentDate = activeUnits.reduce(
+            (earliest: Date | null, unit) => {
+              const exp = getExpiryDate(unit);
+
+              if (!earliest || (exp && exp < earliest)) return exp;
+              return earliest;
+            },
+            null,
+          );
+
+          return (
+            <div className="flex gap-2">
+              {openedUnit ? (
+                <Chip
+                  size="sm"
+                  color="success"
+                  variant="dot"
+                  className="uppercase"
+                >
+                  In Use
+                </Chip>
+              ) : (
+                <Chip
+                  size="sm"
+                  color="warning"
+                  variant="flat"
+                  className="uppercase"
+                >
+                  Stockpiled
+                </Chip>
+              )}
+              {urgentDate && urgentDate < now && (
+                <Chip
+                  size="sm"
+                  color="danger"
+                  startContent={<AlertCircle size={12} />}
+                  className="uppercase"
+                >
+                  Expired
+                </Chip>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        key: "rating",
+        label: "Rating",
+        icon: <Star size={16} />,
+        Cell: ({ product }) => <Rating value={product.rating ?? 0} />,
+      },
+      {
+        key: "price",
+        label: "Price",
+        icon: <DollarSign size={16} />,
+        Cell: ({ product }) => <p>{product.price.toLocaleString()}</p>,
+      },
+      {
+        key: "actions",
+        label: "Actions",
+        icon: <MoreHorizontal size={16} />,
+        Cell: ({ product }) => <AddToWishlistModal product={product} />,
+      },
+      {
+        key: "archivedAt",
+        label: "Archived at",
+        icon: <Archive size={16} />,
+        Cell: ({ product }) => (
+          <p>
+            {product.archivedAt &&
+              new Date(product.archivedAt).toLocaleDateString()}
+          </p>
+        ),
+      },
+    ];
+
+    return columns.filter(({ key }) =>
+      showArchived ? true : key !== "archivedAt",
+    );
+  }, [showArchived, now]);
 
   const { data: { rows: products = [], total = 0 } = {}, isLoading } = useQuery(
     {
-      queryKey: queryKeys.products({ sortDirections, page, perPage, search }),
+      queryKey: queryKeys.products({
+        sortDirections,
+        page,
+        perPage,
+        search,
+        showArchived,
+      }),
       queryFn: async ({
-        queryKey: [_, { sortDirections, page, perPage, search }],
+        queryKey: [_, { sortDirections, page, perPage, search, showArchived }],
       }) => {
         if (!user?.$id) return {} as Models.RowList<Products>;
 
@@ -126,6 +306,7 @@ export default function Page() {
           tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
           queries: [
             Query.equal("userId", user.$id),
+            ...(showArchived ? [] : [Query.isNull("archivedAt")]),
             ...(search
               ? [
                   Query.or([
@@ -199,13 +380,49 @@ export default function Page() {
     queryKey: queryKeys.routines(),
     queryFn: async () => {
       const res = await tables.listRows<Routines>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_ROUTINES_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.routines,
         queries: [Query.equal("userId", user!.$id)],
       });
       return res.rows;
     },
     enabled: !!user?.$id,
+  });
+
+  const { data: wishlist = [], isLoading: loadingWishlist } = useQuery({
+    queryKey: queryKeys.wishlist(),
+    queryFn: async () => {
+      const res = await tables.listRows<WishlistProducts>({
+        databaseId,
+        tableId: tableIds.wishlist,
+        queries: [
+          Query.equal("userId", user!.$id),
+          Query.select(["*", "product.*"]),
+          Query.orderDesc("$updatedAt"),
+          Query.orderDesc("$createdAt"),
+        ],
+      });
+      return res.rows;
+    },
+    enabled: !!user?.$id,
+  });
+
+  const { mutate: removeFromWishlist } = useMutation({
+    mutationFn: async (wishlistId: string) => {
+      return await tables.deleteRow({
+        databaseId,
+        tableId: tableIds.wishlist,
+        rowId: wishlistId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.wishlist() });
+      addToast({
+        title: "Removed",
+        description: "Product removed from wishlist.",
+        color: "warning",
+      });
+    },
   });
 
   return (
@@ -265,10 +482,35 @@ export default function Page() {
                 <div className="flex justify-end items-end gap-4">
                   <Input
                     label="Search..."
-                    startContent={<Search className="size-5" />}
+                    labelPlacement="outside"
+                    startContent={
+                      <Search className="size-5 text-default-400" />
+                    }
                     size="sm"
                     onValueChange={setSearch}
+                    className="max-w-xs"
                   />
+                  <Switch
+                    size="sm"
+                    color="secondary"
+                    isSelected={showArchived}
+                    onValueChange={setShowArchived}
+                    thumbIcon={({ isSelected, className }) =>
+                      isSelected ? (
+                        <div className={className}>
+                          <Archive className="size-3" />
+                        </div>
+                      ) : (
+                        <div className={className}>
+                          <Package className="size-3" />
+                        </div>
+                      )
+                    }
+                  >
+                    <span className="text-tiny uppercase font-bold text-default-500">
+                      {showArchived ? "Viewing Archive" : "Show Archived"}
+                    </span>
+                  </Switch>
 
                   <Dropdown>
                     <DropdownTrigger>
@@ -406,118 +648,30 @@ export default function Page() {
               }
               aria-label="Inventory"
             >
-              <TableHeader>
-                <TableColumn className="uppercase tracking-wider">
-                  Formula
-                </TableColumn>
-                <TableColumn className="uppercase tracking-wider">
-                  Category
-                </TableColumn>
-                <TableColumn className="uppercase tracking-wider">
-                  Inventory
-                </TableColumn>
-                <TableColumn className="uppercase tracking-wider">
-                  Status
-                </TableColumn>
-                <TableColumn className="uppercase tracking-wider">
-                  Price
-                </TableColumn>
+              <TableHeader columns={activeColumns}>
+                {({ key, icon, label }) => (
+                  <TableColumn key={key} className="uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      {icon}
+                      {label}
+                    </div>
+                  </TableColumn>
+                )}
               </TableHeader>
               <TableBody
                 items={products}
                 isLoading={isLoading}
                 emptyContent="Shelf is empty."
               >
-                {(product) => {
-                  const activeUnits =
-                    product.units?.filter((u) => !u.finishedAt) || [];
-                  const openedUnit = activeUnits.find((u) => u.openedAt);
-
-                  // Logic to find earliest relevant expiry
-                  const urgentDate = activeUnits.reduce(
-                    (earliest: Date | null, unit) => {
-                      const exp = getExpiryDate(unit);
-
-                      if (!earliest || (exp && exp < earliest)) return exp;
-                      return earliest;
-                    },
-                    null,
-                  );
-
-                  return (
-                    <TableRow
-                      key={product.$id}
-                      className="border-b border-divider last:border-none cursor-pointer hover:bg-content2"
-                      as={Link}
-                      href={`/products/${product.$id}`}
-                    >
-                      <TableCell>
-                        <User
-                          name={product.name}
-                          description={product.brand}
-                          avatarProps={{
-                            radius: "md",
-                            color: "primary",
-                            size: "sm",
-                            className: "shrink-0 rounded-full",
-                          }}
-                        />
+                {(product) => (
+                  <TableRow key={product.$id}>
+                    {activeColumns.map(({ key, Cell }) => (
+                      <TableCell key={key}>
+                        <Cell product={product} />
                       </TableCell>
-                      <TableCell>
-                        <Chip
-                          size="sm"
-                          variant="flat"
-                          color="secondary"
-                          className="uppercase font-bold"
-                        >
-                          {product.category}
-                        </Chip>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Package size={14} className="text-default-400" />
-                          <span className="font-semibold">
-                            {activeUnits.length} Units
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {openedUnit ? (
-                            <Chip
-                              size="sm"
-                              color="success"
-                              variant="dot"
-                              className="uppercase"
-                            >
-                              In Use
-                            </Chip>
-                          ) : (
-                            <Chip
-                              size="sm"
-                              color="warning"
-                              variant="flat"
-                              className="uppercase"
-                            >
-                              Stockpiled
-                            </Chip>
-                          )}
-                          {urgentDate && urgentDate < now && (
-                            <Chip
-                              size="sm"
-                              color="danger"
-                              startContent={<AlertCircle size={12} />}
-                              className="uppercase"
-                            >
-                              Expired
-                            </Chip>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{product.price.toLocaleString()}</TableCell>
-                    </TableRow>
-                  );
-                }}
+                    ))}
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
@@ -569,27 +723,71 @@ export default function Page() {
             )}
           </div>
         </Tab>
+
+        <Tab
+          key="wishlist"
+          title={
+            <div className="flex items-center gap-2 uppercase font-bold">
+              <Heart size={18} /> <span>Wishlist</span>
+            </div>
+          }
+        >
+          <div className="py-4">
+            {loadingWishlist ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-32 rounded-2xl" />
+                ))}
+              </div>
+            ) : wishlist.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-default-50 rounded-3xl border-2 border-dashed border-default-200">
+                <Heart size={48} className="text-default-300 mb-4" />
+                <p className="text-default-500 font-bold uppercase tracking-widest">
+                  Your wishlist is empty
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {wishlist.map((item) => (
+                  <Card
+                    key={item.$id}
+                    isPressable
+                    shadow="sm"
+                    onPress={() => removeFromWishlist(item.$id)}
+                    className="border-1 border-default-200 hover:border-danger transition-colors group"
+                  >
+                    <CardBody className="p-4 flex flex-row items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-tiny font-bold text-danger uppercase tracking-tighter">
+                          {item.product.brand}
+                        </span>
+                        <h3 className="text-lg font-black leading-tight truncate">
+                          {item.product.name}
+                        </h3>
+                        <div className="flex gap-2 mt-1">
+                          <Chip
+                            size="sm"
+                            variant="flat"
+                            className="text-[10px] uppercase font-bold"
+                          >
+                            {item.product.category}
+                          </Chip>
+                          {item.product.rating && (
+                            <Rating value={item.product.rating ?? 0} />
+                          )}
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </Tab>
       </Tabs>
     </div>
   );
 }
-
-const categories = [
-  { key: "cleanser", label: "Cleanser" },
-  { key: "toner", label: "Toner" },
-  { key: "essence", label: "Essence" },
-  { key: "serum", label: "Serum" },
-  { key: "moisturizer", label: "Moisturizer" },
-  { key: "eye-cream", label: "Eye cream" },
-  { key: "spf", label: "SPF" },
-  { key: "peeling", label: "Peeling" },
-  { key: "mask", label: "Mask" },
-  { key: "sheet-mask", label: "Sheet mask" },
-  { key: "eye-mask", label: "Eye mask" },
-  { key: "spot-treatment", label: "Spot treatment" },
-  { key: "lip-balm", label: "Lip balm" },
-  { key: "lip-mask", label: "Lip mask" },
-];
 
 function CreateProductModal() {
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
@@ -620,7 +818,7 @@ function CreateProductModal() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (values: ProductFormValues) => {
-      const unitsData = values.units.map((u) => ({
+      const unitsData = values.units?.map((u) => ({
         purchaseDate:
           u.purchaseDate?.toDate(getLocalTimeZone()).toISOString() ?? null,
         expiresAt:
@@ -712,7 +910,7 @@ function CreateProductModal() {
                     name="category"
                     control={form.control}
                     render={({
-                      field: { value, ...field },
+                      field: { value, onChange, ...field },
                       fieldState: { invalid, error },
                     }) => (
                       <Select
@@ -721,9 +919,7 @@ function CreateProductModal() {
                         variant="bordered"
                         labelPlacement="outside"
                         selectedKeys={[value]}
-                        onSelectionChange={(k) =>
-                          field.onChange(Array.from(k)[0])
-                        }
+                        onSelectionChange={(k) => onChange(Array.from(k)[0])}
                         isInvalid={invalid}
                         errorMessage={error?.message}
                       >

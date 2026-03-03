@@ -32,7 +32,7 @@ export const ProductSchema = z.object({
   category: z.string().min(1, "Required"),
   price: z.number().min(0),
   description: z.string().nullish(),
-  units: z.array(UnitSchema).min(1, "Add at least one unit"),
+  units: z.array(UnitSchema).min(1, "Add at least one unit").nullish(),
 });
 
 export type ProductFormValues = z.infer<typeof ProductSchema>;

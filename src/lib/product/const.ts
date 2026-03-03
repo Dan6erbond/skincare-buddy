@@ -1,0 +1,16 @@
+export const categories = [
+  { key: "cleanser", label: "Cleanser" },
+  { key: "toner", label: "Toner" },
+  { key: "essence", label: "Essence" },
+  { key: "serum", label: "Serum" },
+  { key: "moisturizer", label: "Moisturizer" },
+  { key: "eye-cream", label: "Eye cream" },
+  { key: "spf", label: "SPF" },
+  { key: "peeling", label: "Peeling" },
+  { key: "mask", label: "Mask" },
+  { key: "sheet-mask", label: "Sheet mask" },
+  { key: "eye-mask", label: "Eye mask" },
+  { key: "spot-treatment", label: "Spot treatment" },
+  { key: "lip-balm", label: "Lip balm" },
+  { key: "lip-mask", label: "Lip mask" },
+];

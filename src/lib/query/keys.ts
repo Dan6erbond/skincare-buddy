@@ -5,6 +5,7 @@ export function products(props: {
   page: number;
   perPage: number;
   search: string;
+  showArchived: boolean;
 }): ["products", typeof props];
 
 export function products(props?: {
@@ -12,6 +13,7 @@ export function products(props?: {
   page: number;
   perPage: number;
   search: string;
+  showArchived: boolean;
 }) {
   return props ? ["products", props] : ["products"];
 }
@@ -23,3 +25,5 @@ export const routines = () => ["routines"] as const;
 export const routine = (id: string) => ["routines", id] as const;
 
 export const step = (id: string) => ["steps", id] as const;
+
+export const wishlist = () => ["wishlist"] as const;
