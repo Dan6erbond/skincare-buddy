@@ -101,7 +101,12 @@ export default function Page() {
     { key: "name", label: "Name", icon: <Type size={16} /> },
     { key: "category", label: "Category", icon: <Tag size={16} /> },
     { key: "price", label: "Price", icon: <DollarSign size={16} /> },
-    { key: "rating", label: "Rating", icon: <Star size={16} /> },
+    {
+      key: "rating",
+      label: "Rating",
+      icon: <Star size={16} />,
+      defaultDesc: true,
+    },
   ];
 
   const { data: { rows: products = [], total = 0 } = {}, isLoading } = useQuery(
@@ -283,9 +288,23 @@ export default function Page() {
                       selectionMode="multiple"
                       selectedKeys={new Set(Object.keys(sortDirections))}
                       onAction={(key) => {
-                        // If user clicks a key that is already selected, toggle its direction
+                        const sortOption = sortOptions.find(
+                          (opt) => opt.key === key,
+                        )!;
+
                         if (key in sortDirections) {
-                          if (sortDirections[key] === "asc") {
+                          if (
+                            sortOption.defaultDesc &&
+                            sortDirections[key] === "desc"
+                          ) {
+                            setSortDirections((prev) => ({
+                              ...prev,
+                              [key]: "asc" as const,
+                            }));
+                          } else if (
+                            !sortOption.defaultDesc &&
+                            sortDirections[key] === "asc"
+                          ) {
                             setSortDirections((prev) => ({
                               ...prev,
                               [key]: "desc" as const,
@@ -302,7 +321,9 @@ export default function Page() {
                         } else {
                           setSortDirections((prev) => ({
                             ...prev,
-                            [key]: "asc" as const,
+                            [key]: sortOption.defaultDesc
+                              ? ("desc" as const)
+                              : ("asc" as const),
                           }));
                         }
                       }}
