@@ -664,7 +664,12 @@ export default function Page() {
                 emptyContent="Shelf is empty."
               >
                 {(product) => (
-                  <TableRow key={product.$id}>
+                  <TableRow
+                    key={product.$id}
+                    className="border-b border-divider last:border-none cursor-pointer hover:bg-content2"
+                    as={Link}
+                    href={`/products/${product.$id}`}
+                  >
                     {activeColumns.map(({ key, Cell }) => (
                       <TableCell key={key}>
                         <Cell product={product} />
