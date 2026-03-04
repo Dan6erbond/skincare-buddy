@@ -56,11 +56,14 @@ import ProductSelect from "@/components/ui/product-select";
 import { RoutineDescription } from "./description";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
+import { useProfile } from "@/hooks/use-profile";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 export default function Page({ params }: PageProps<"/routines/[id]">) {
   const { id } = use(params);
   const { tables } = useAppwrite();
+
+  const { profile } = useProfile();
 
   // 1. Fetch Routine with nested Regiments and Steps
   const { data: routine, isLoading } = useQuery({
@@ -103,25 +106,36 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
   const copyRoutineToAI = useCallback(() => {
     if (!routine) return;
 
+    // 1. Format Profile Context
+    const profileSection = profile
+      ? `### Target Skin Profile\n` +
+        `- **Type:** ${profile.skinType || "Unspecified"}\n` +
+        `- **Sensitivity:** ${profile.hasSensitiveSkin ? "High/Sensitive" : "Normal"}\n` +
+        `- **Primary Concerns:** ${profile.skinIssues?.length ? profile.skinIssues.join(", ") : "General maintenance"}\n\n`
+      : `### Target Skin Profile\n*No profile provided.*\n\n`;
+
     const header =
       `### Routine Analysis: ${routine.name}\n` +
       `*Generated on: ${new Date().toLocaleDateString()}*\n\n` +
-      `Please analyze this skincare routine. Check for:\n` +
+      `Please analyze this skincare routine for the skin profile provided above. Check for:\n` +
       `1. Ingredient conflicts (e.g., actives that shouldn't mix).\n` +
       `2. Proper order of application (thin-to-thick, pH considerations).\n` +
-      `3. Missing steps or redundancy.\n\n---\n`;
+      `3. Compatibility with the user's specific skin type and concerns.\n\n---\n\n`;
 
-    // Map through regiments (Morning/Night/etc)
+    // 2. Map through regiments (Morning/Night/etc)
     const regimentsBody = routine.regiment
       ?.map((reg) => {
         const stepsMarkdown = reg.steps
           .map((step, index) => {
+            // Use stepResults if available to get the most hydrated product data
+            const currentStepData =
+              stepResults.find((r) => r.data?.$id === step.$id)?.data ?? step;
+
             const productList =
-              (
-                stepResults.find((r) => r.data?.$id === step.$id)?.data ?? step
-              ).products
+              currentStepData.products
                 ?.map((p) => `    - ${p.brand}: ${p.name} (${p.category})`)
                 .join("\n") || "    - No product assigned";
+
             return `${index + 1}. **${step.name}**\n${productList}${step.description ? `\n    - *Note: ${step.description}*` : ""}`;
           })
           .join("\n\n");
@@ -130,15 +144,17 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
       })
       .join("\n\n---\n\n");
 
-    const finalMarkdown = header + regimentsBody;
+    // Combine: Profile first, then Header/Instructions, then the Routine data
+    const finalMarkdown = profileSection + header + regimentsBody;
 
     navigator.clipboard
       .writeText(finalMarkdown)
       .then(() => {
         addToast({
-          title: "Routine Copied",
-          description: "Ready for AI deep-dive analysis.",
+          title: "Routine & Profile Copied",
+          description: "Formatted for AI deep-dive analysis.",
           color: "secondary",
+          variant: "flat",
           shouldShowTimeoutProgress: true,
         });
       })
@@ -149,7 +165,7 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
           color: "danger",
         });
       });
-  }, [routine, stepResults]);
+  }, [routine, stepResults, profile]);
 
   if (isLoading)
     return (

@@ -1,8 +1,5 @@
 "use client";
 
-import * as queryKeys from "@/lib/query/keys";
-import * as z from "zod";
-
 import {
   Button,
   Card,
@@ -13,10 +10,8 @@ import {
   Select,
   SelectItem,
   Skeleton,
-  addToast,
 } from "@heroui/react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { ID, Permission, Query, Role } from "appwrite";
 import {
   ListChecks,
   Plus,
@@ -25,30 +20,12 @@ import {
   Trash2,
   User as UserIcon,
 } from "lucide-react";
-import { Profiles, ProfilesSkinType } from "@/lib/appwrite/appwrite";
-import { databaseId, tableIds } from "@/lib/appwrite/const";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ProfileFormValues, ProfileSchema } from "@/lib/schema/profile";
 
-import { ModelCreate } from "@/lib/appwrite/utils";
-import { useAppwrite } from "@/contexts/appwrite";
-import { useAuth } from "@/contexts/auth";
+import { ProfilesSkinType } from "@/lib/appwrite/appwrite";
 import { useEffect } from "react";
+import { useProfile } from "@/hooks/use-profile";
 import { zodResolver } from "@hookform/resolvers/zod";
-
-const ProfileSchema = z.object({
-  skinType: z.enum(ProfilesSkinType).optional(),
-  hasSensitiveSkin: z.boolean().default(false).optional(),
-  skinIssues: z
-    .array(
-      z.object({
-        value: z.string().min(1, "Required"),
-      }),
-    )
-    .default([])
-    .optional(),
-});
-
-type ProfileFormValues = z.infer<typeof ProfileSchema>;
 
 const skinTypes = [
   { label: "Normal", value: ProfilesSkinType.NORMAL },
@@ -58,25 +35,7 @@ const skinTypes = [
 ];
 
 export default function ProfilePage() {
-  const { user } = useAuth();
-  const { tables } = useAppwrite();
-  const queryClient = useQueryClient();
-
-  // 1. Fetch Profile
-  const { data: profile, isLoading } = useQuery({
-    queryKey: queryKeys.profile(user?.$id),
-    queryFn: async () => {
-      if (!user?.$id) return null;
-      const res = await tables.listRows<Profiles>({
-        databaseId,
-        tableId: tableIds.profiles,
-        queries: [Query.equal("userId", user.$id), Query.limit(1)],
-      });
-      return res.rows[0] || null;
-    },
-
-    enabled: !!user?.$id,
-  });
+  const { profile, isLoading, mutate, isMutating } = useProfile();
 
   const {
     control,
@@ -107,48 +66,6 @@ export default function ProfilePage() {
       });
     }
   }, [profile, reset]);
-
-  // 2. Upsert Mutation (Update or Create)
-  const { mutate, isPending } = useMutation({
-    mutationFn: async (values: ProfileFormValues) => {
-      if (!user?.$id) throw new Error("Not authenticated");
-
-      const data = {
-        ...values,
-        skinIssues: values.skinIssues?.map((i) => i.value) || [],
-        userId: user?.$id,
-      };
-
-      if (profile?.$id) {
-        return await tables.updateRow({
-          databaseId,
-          tableId: tableIds.profiles,
-          rowId: profile.$id,
-          data,
-        });
-      } else {
-        return await tables.createRow<ModelCreate<Profiles>>({
-          databaseId,
-          tableId: tableIds.profiles,
-          rowId: ID.unique(),
-          data,
-          permissions: [
-            Permission.read(Role.user(user.$id)),
-            Permission.update(Role.user(user.$id)),
-            Permission.delete(Role.user(user.$id)),
-          ],
-        });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.profile(user?.$id) });
-      addToast({
-        title: "Profile Updated",
-        description: "Your skin profile has been saved.",
-        color: "success",
-      });
-    },
-  });
 
   if (isLoading) return <ProfileSkeleton />;
 
@@ -325,7 +242,7 @@ export default function ProfilePage() {
                 color="primary"
                 size="lg"
                 className="w-full font-bold shadow-lg shadow-primary/20"
-                isLoading={isPending}
+                isLoading={isMutating}
               >
                 Save Profile Changes
               </Button>

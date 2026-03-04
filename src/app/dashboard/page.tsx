@@ -98,6 +98,7 @@ import { getLocalTimeZone } from "@internationalized/date";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import { useDebounceValue } from "usehooks-ts";
+import { useProfile } from "@/hooks/use-profile";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -113,6 +114,8 @@ export default function Page() {
   const { tables } = useAppwrite();
   const queryClient = useQueryClient();
   const now = useMemo(() => new Date(), []);
+
+  const { profile } = useProfile();
 
   const [showArchived, setShowArchived] = useState(false);
   const [search, setSearch] = useDebounceValue("", 500);
@@ -341,10 +344,29 @@ export default function Page() {
       return;
     }
 
+    let profileSection =
+      "### User Skin Profile\n*No profile details provided.*\n\n";
+
+    if (profile) {
+      const skinType = profile.skinType || "Not specified";
+      const sensitivity = profile.hasSensitiveSkin ? "Yes (Sensitive)" : "No";
+      const concerns = profile.skinIssues?.length
+        ? profile.skinIssues.join(", ")
+        : "None listed";
+
+      profileSection =
+        `### User Skin Profile\n` +
+        `- **Skin Type:** ${skinType}\n` +
+        `- **Sensitive:** ${sensitivity}\n` +
+        `- **Concerns:** ${concerns}\n\n`;
+    }
+
     const header =
       `### Skincare Inventory Analysis Request\n` +
       `*User Shelf Export - ${new Date().toLocaleDateString()}*\n\n` +
       `Please review my current products. Focus on ingredient synergies, potential irritation risks, and routine optimization.\n\n---\n`;
+
+    const inventoryHeader = `### Current Inventory\n`;
 
     const inventoryBody = products
       .map((p) => {
@@ -357,8 +379,11 @@ export default function Page() {
       })
       .join("\n\n");
 
+    const finalClipboardText =
+      header + profileSection + inventoryHeader + inventoryBody;
+
     navigator.clipboard
-      .writeText(header + inventoryBody)
+      .writeText(finalClipboardText)
       .then(() => {
         addToast({
           title: "Copied to Clipboard",
@@ -374,7 +399,7 @@ export default function Page() {
           color: "danger",
         });
       });
-  }, [products]);
+  }, [products, profile]);
 
   const { data: routines = [], isLoading: loadingRoutines } = useQuery({
     queryKey: queryKeys.routines(),
