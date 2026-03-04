@@ -27,3 +27,5 @@ export const routine = (id: string) => ["routines", id] as const;
 export const step = (id: string) => ["steps", id] as const;
 
 export const wishlist = () => ["wishlist"] as const;
+
+export const profile = (userId?: string) => ["profile", userId] as const;

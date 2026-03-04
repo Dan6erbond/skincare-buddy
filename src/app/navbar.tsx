@@ -59,8 +59,9 @@ export default function AppNavbar() {
 
               <DropdownItem
                 key="profile"
+                as={Link}
                 startContent={<UserIcon size={16} />}
-                href="#"
+                href="/profile"
               >
                 My Profile
               </DropdownItem>

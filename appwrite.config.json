@@ -453,11 +453,13 @@
         },
         {
             "$id": "wishlist_products",
-            "$permissions": [],
+            "$permissions": [
+                "create(\"users\")"
+            ],
             "databaseId": "skincare-buddy",
             "name": "wishlist_products",
             "enabled": true,
-            "rowSecurity": false,
+            "rowSecurity": true,
             "columns": [
                 {
                     "key": "product",
@@ -470,6 +472,67 @@
                     "twoWayKey": "wishlistProducts",
                     "onDelete": "cascade",
                     "side": "parent"
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "profiles",
+            "$permissions": [
+                "create(\"users\")"
+            ],
+            "databaseId": "skincare-buddy",
+            "name": "profiles",
+            "enabled": true,
+            "rowSecurity": true,
+            "columns": [
+                {
+                    "key": "hasSensitiveSkin",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "skinType",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "elements": [
+                        "oily",
+                        "dry",
+                        "combination",
+                        "normal"
+                    ],
+                    "format": "enum",
+                    "default": null
+                },
+                {
+                    "key": "skinIssues",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 512,
+                    "default": null,
+                    "encrypt": false
                 }
             ],
             "indexes": []

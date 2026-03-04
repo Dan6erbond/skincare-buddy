@@ -9,4 +9,5 @@ export const tableIds = {
   regiments: "regiments",
   steps: "steps",
   wishlist: "wishlist_products",
+  profiles: "profiles",
 } as const;

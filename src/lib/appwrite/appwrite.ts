@@ -13,6 +13,13 @@ export enum RegimentsType {
     NIGHT = "night"
 }
 
+export enum ProfilesSkinType {
+    OILY = "oily",
+    DRY = "dry",
+    COMBINATION = "combination",
+    NORMAL = "normal"
+}
+
 export type Products = Models.Row & {
     name: string;
     brand: string;
@@ -61,4 +68,12 @@ export type Steps = Models.Row & {
 
 export type WishlistProducts = Models.Row & {
     product: Products;
+    userId: string;
+}
+
+export type Profiles = Models.Row & {
+    hasSensitiveSkin: boolean | null;
+    userId: string;
+    skinType: ProfilesSkinType | null;
+    skinIssues: string[] | null;
 }
