@@ -1,7 +1,7 @@
 {
     "projectId": "skincare-buddy",
-    "endpoint": "https://fra.cloud.appwrite.io/v1",
     "projectName": "Skincare Buddy",
+    "endpoint": "https://fra.cloud.appwrite.io/v1",
     "settings": {
         "services": {
             "account": true,
@@ -89,17 +89,17 @@
                     "type": "datetime",
                     "required": false,
                     "array": false,
-                    "format": "",
-                    "default": null
+                    "default": null,
+                    "format": ""
                 },
                 {
                     "key": "price",
                     "type": "double",
                     "required": true,
                     "array": false,
+                    "default": null,
                     "min": 0,
-                    "max": 10000,
-                    "default": null
+                    "max": 10000
                 },
                 {
                     "key": "userId",
@@ -115,9 +115,9 @@
                     "type": "integer",
                     "required": false,
                     "array": false,
+                    "default": null,
                     "min": 0,
-                    "max": 5,
-                    "default": null
+                    "max": 5
                 },
                 {
                     "key": "description",
@@ -157,8 +157,8 @@
                     "type": "datetime",
                     "required": false,
                     "array": false,
-                    "format": "",
-                    "default": null
+                    "default": null,
+                    "format": ""
                 },
                 {
                     "key": "wishlistProducts",
@@ -224,61 +224,61 @@
                     "type": "datetime",
                     "required": false,
                     "array": false,
-                    "format": "",
-                    "default": null
+                    "default": null,
+                    "format": ""
                 },
                 {
                     "key": "expiresAt",
                     "type": "datetime",
                     "required": false,
                     "array": false,
-                    "format": "",
-                    "default": null
+                    "default": null,
+                    "format": ""
                 },
                 {
                     "key": "periodAfterOpeningDuration",
                     "type": "integer",
                     "required": false,
                     "array": false,
+                    "default": null,
                     "min": -9223372036854775808,
-                    "max": 9223372036854775807,
-                    "default": null
+                    "max": 9223372036854775807
                 },
                 {
                     "key": "periodAfterOpeningUnit",
                     "type": "string",
                     "required": false,
                     "array": false,
+                    "default": null,
+                    "format": "enum",
                     "elements": [
                         "months",
                         "years"
-                    ],
-                    "format": "enum",
-                    "default": null
+                    ]
                 },
                 {
                     "key": "openedAt",
                     "type": "datetime",
                     "required": false,
                     "array": false,
-                    "format": "",
-                    "default": null
+                    "default": null,
+                    "format": ""
                 },
                 {
                     "key": "paoExpiresAt",
                     "type": "datetime",
                     "required": false,
                     "array": false,
-                    "format": "",
-                    "default": null
+                    "default": null,
+                    "format": ""
                 },
                 {
                     "key": "finishedAt",
                     "type": "datetime",
                     "required": false,
                     "array": false,
-                    "format": "",
-                    "default": null
+                    "default": null,
+                    "format": ""
                 },
                 {
                     "key": "product",
@@ -362,12 +362,12 @@
                     "type": "string",
                     "required": true,
                     "array": false,
+                    "default": null,
+                    "format": "enum",
                     "elements": [
                         "morning",
                         "night"
-                    ],
-                    "format": "enum",
-                    "default": null
+                    ]
                 },
                 {
                     "key": "steps",
@@ -503,27 +503,18 @@
                     "default": null
                 },
                 {
-                    "key": "userId",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 32,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
                     "key": "skinType",
                     "type": "string",
                     "required": false,
                     "array": false,
+                    "default": null,
+                    "format": "enum",
                     "elements": [
                         "oily",
                         "dry",
                         "combination",
                         "normal"
-                    ],
-                    "format": "enum",
-                    "default": null
+                    ]
                 },
                 {
                     "key": "skinIssues",
@@ -531,6 +522,15 @@
                     "required": false,
                     "array": true,
                     "size": 512,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "userId",
+                    "type": "varchar",
+                    "required": true,
+                    "array": false,
+                    "size": 32,
                     "default": null,
                     "encrypt": false
                 }
