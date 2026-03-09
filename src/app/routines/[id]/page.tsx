@@ -22,7 +22,6 @@ import {
   Spinner,
   Tab,
   Tabs,
-  addToast,
   useDisclosure,
 } from "@heroui/react";
 import {
@@ -43,7 +42,7 @@ import {
   Routines,
   Steps,
 } from "@/lib/appwrite/appwrite";
-import { use, useCallback, useState } from "react";
+import { use, useMemo, useState } from "react";
 import {
   useMutation,
   useQueries,
@@ -51,6 +50,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import { AIExportButton } from "@/components/ui/ai-export-button";
 import { ModelCreate } from "@/lib/appwrite/utils";
 import ProductSelect from "@/components/ui/product-select";
 import { RoutineDescription } from "./description";
@@ -103,7 +103,7 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
         })) ?? [],
   });
 
-  const copyRoutineToAI = useCallback(() => {
+  const routineAnalysisText = useMemo(() => {
     if (!routine) return;
 
     // 1. Format Profile Context
@@ -145,26 +145,7 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
       .join("\n\n---\n\n");
 
     // Combine: Profile first, then Header/Instructions, then the Routine data
-    const finalMarkdown = profileSection + header + regimentsBody;
-
-    navigator.clipboard
-      .writeText(finalMarkdown)
-      .then(() => {
-        addToast({
-          title: "Routine & Profile Copied",
-          description: "Formatted for AI deep-dive analysis.",
-          color: "secondary",
-          variant: "flat",
-          shouldShowTimeoutProgress: true,
-        });
-      })
-      .catch(() => {
-        addToast({
-          title: "Error",
-          description: "Clipboard access denied.",
-          color: "danger",
-        });
-      });
+    return profileSection + header + regimentsBody;
   }, [routine, stepResults, profile]);
 
   if (isLoading)
@@ -198,16 +179,17 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
         </div>
 
         <div className="flex gap-2">
-          <Button
-            variant="shadow"
-            color="secondary"
-            size="md"
-            onPress={copyRoutineToAI}
-            startContent={<Sparkles size={18} />}
-            className="font-bold uppercase tracking-wider"
-          >
-            AI Analysis
-          </Button>
+          {routineAnalysisText && (
+            <AIExportButton
+              variant="shadow"
+              color="secondary"
+              size="md"
+              clipboardText={routineAnalysisText}
+              startContent={<Sparkles className="size-4" />}
+            >
+              AI Analysis
+            </AIExportButton>
+          )}
         </div>
       </header>
 

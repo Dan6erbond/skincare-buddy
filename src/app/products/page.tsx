@@ -40,18 +40,11 @@ import {
   TableHeader,
   TableRow,
   User,
-  addToast,
 } from "@heroui/react";
-import {
-  ComponentType,
-  ReactNode,
-  useCallback,
-  useMemo,
-  useState,
-} from "react";
+import { ComponentType, ReactNode, useMemo, useState } from "react";
 import { Models, Query } from "appwrite";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { AIExportButton } from "@/components/ui/ai-export-button";
 import { AddToWishlistModal } from "@/components/wishlist/add-modal";
 import { CreateProductModal } from "@/components/product/create-modal";
 import Link from "next/link";
@@ -62,6 +55,7 @@ import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import { useDebounceValue } from "usehooks-ts";
 import { useProfile } from "@/hooks/use-profile";
+import { useQuery } from "@tanstack/react-query";
 
 type ColumnDef = {
   key: string;
@@ -294,13 +288,8 @@ export default function Page() {
     },
   );
 
-  const copyInventoryToAI = useCallback(() => {
+  const finalClipboardText = useMemo(() => {
     if (!products.length) {
-      addToast({
-        title: "Export Failed",
-        description: "Your shelf is currently empty.",
-        color: "danger",
-      });
       return;
     }
 
@@ -339,26 +328,7 @@ export default function Page() {
       })
       .join("\n\n");
 
-    const finalClipboardText =
-      header + profileSection + inventoryHeader + inventoryBody;
-
-    navigator.clipboard
-      .writeText(finalClipboardText)
-      .then(() => {
-        addToast({
-          title: "Copied to Clipboard",
-          description: "Inventory formatted for AI analysis.",
-          color: "success",
-          shouldShowTimeoutProgress: true,
-        });
-      })
-      .catch(() => {
-        addToast({
-          title: "Copy Error",
-          description: "Could not access clipboard.",
-          color: "danger",
-        });
-      });
+    return header + profileSection + inventoryHeader + inventoryBody;
   }, [products, profile]);
 
   return (
@@ -382,16 +352,17 @@ export default function Page() {
             Total Items:{" "}
             <span className="text-primary font-bold">{products.length}</span>
           </div>
-          <Button
-            size="sm"
-            color="secondary"
-            variant="flat"
-            onPress={copyInventoryToAI}
-            startContent={<Sparkles size={16} />} // Using Sparkles to imply AI/Magic
-            className="font-bold uppercase tracking-wider"
-          >
-            Export for AI
-          </Button>
+          {finalClipboardText && (
+            <AIExportButton
+              size="sm"
+              color="secondary"
+              variant="flat"
+              clipboardText={finalClipboardText}
+              startContent={<Sparkles className="size-4" />}
+            >
+              Export for AI
+            </AIExportButton>
+          )}
         </div>
 
         <Table
