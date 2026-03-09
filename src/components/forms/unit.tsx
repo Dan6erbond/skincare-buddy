@@ -1,8 +1,14 @@
-import { Button, DatePicker, NumberInput, Select, SelectItem } from "@heroui/react";
+import {
+  Button,
+  DatePicker,
+  NumberInput,
+  Select,
+  SelectItem,
+} from "@heroui/react";
 import { Controller, useFormContext } from "react-hook-form";
 
 import { Trash2 } from "lucide-react";
-import { UnitsPeriodAfterOpeningUnit } from "@/lib/appwrite/appwrite";
+import { UnitsPeriodAfterOpeningUnit } from "@/lib/appwrite/types";
 
 interface UnitFormFieldsProps {
   index?: number; // Optional index

@@ -1,5 +1,5 @@
 import { CalendarDate } from "@internationalized/date";
-import { UnitsPeriodAfterOpeningUnit } from "@/lib/appwrite/appwrite";
+import { UnitsPeriodAfterOpeningUnit } from "@/lib/appwrite/types";
 import z from "zod";
 
 export const calendarDateSchema = z.custom<CalendarDate>(

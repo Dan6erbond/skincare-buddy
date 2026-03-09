@@ -41,7 +41,7 @@ import {
   RegimentsType,
   Routines,
   Steps,
-} from "@/lib/appwrite/appwrite";
+} from "@/lib/appwrite/types";
 import { use, useMemo, useState } from "react";
 import {
   useMutation,

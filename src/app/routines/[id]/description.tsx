@@ -86,7 +86,7 @@ import { NumberedListPickerPlugin } from "@/components/editor/plugins/picker/num
 import { ParagraphPickerPlugin } from "@/components/editor/plugins/picker/paragraph";
 import { QuotePickerPlugin } from "@/components/editor/plugins/picker/quote";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import { Routines } from "@/lib/appwrite/appwrite";
+import { Routines } from "@/lib/appwrite/types";
 import { SubSuperToolbarPlugin } from "@/components/editor/plugins/toolbar/sub-super";
 import { TABLE } from "@/components/editor/transformers/markdown-table";
 import { TabFocusPlugin } from "@/components/editor/plugins/tab-focus";

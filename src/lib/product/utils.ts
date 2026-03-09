@@ -1,4 +1,4 @@
-import { Units, UnitsPeriodAfterOpeningUnit } from "@/lib/appwrite/appwrite";
+import { Units, UnitsPeriodAfterOpeningUnit } from "@/lib/appwrite/types";
 
 export const getExpiryDate = (unit: Units) => {
   const exp = unit.expiresAt ? new Date(unit.expiresAt) : null;

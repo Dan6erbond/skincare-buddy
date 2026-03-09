@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "appwrite:pull": "appwrite pull",
-    "appwrite:types": "appwrite pull tables && appwrite types ./src/lib/appwrite/appwrite.ts"
+    "appwrite:types": "appwrite pull tables && appwrite types ./src/lib/appwrite/types.ts"
   },
   "dependencies": {
     "@heroui/react": "^2.8.7",

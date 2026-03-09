@@ -3,7 +3,7 @@ import * as queryKeys from "@/lib/query/keys";
 import { Select, SelectItem, SelectProps } from "@heroui/react";
 
 import { CollectionElement } from "@react-types/shared";
-import { Products } from "@/lib/appwrite/appwrite";
+import { Products } from "@/lib/appwrite/types";
 import { Query } from "appwrite";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";

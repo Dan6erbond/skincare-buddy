@@ -48,7 +48,7 @@ import { AIExportButton } from "@/components/ui/ai-export-button";
 import { AddToWishlistModal } from "@/components/wishlist/add-modal";
 import { CreateProductModal } from "@/components/product/create-modal";
 import Link from "next/link";
-import { Products } from "@/lib/appwrite/appwrite";
+import { Products } from "@/lib/appwrite/types";
 import { Rating } from "@/components/ui/rating";
 import { getExpiryDate } from "@/lib/product/utils";
 import { useAppwrite } from "@/contexts/appwrite";

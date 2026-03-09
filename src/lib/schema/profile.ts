@@ -2,7 +2,7 @@
 
 import * as z from "zod";
 
-import { ProfilesSkinType } from "@/lib/appwrite/appwrite";
+import { ProfilesSkinType } from "@/lib/appwrite/types";
 
 export const ProfileSchema = z.object({
   skinType: z.enum(ProfilesSkinType).optional(),

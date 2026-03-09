@@ -4,7 +4,7 @@ import { ID, Permission, Role } from "appwrite";
 import { databaseId, tableIds } from "@/lib/appwrite/const";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { Products } from "@/lib/appwrite/appwrite";
+import { Products } from "@/lib/appwrite/types";
 import { addToast } from "@heroui/react";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";

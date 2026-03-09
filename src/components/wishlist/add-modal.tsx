@@ -12,7 +12,7 @@ import {
 } from "@heroui/react";
 import { Heart, Plus } from "lucide-react";
 
-import { Products } from "@/lib/appwrite/appwrite";
+import { Products } from "@/lib/appwrite/types";
 import { useAddToWishlist } from "@/hooks/use-add-to-wishlist";
 
 interface Props {

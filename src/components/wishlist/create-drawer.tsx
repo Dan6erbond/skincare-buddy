@@ -26,7 +26,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import { WishlistProducts } from "@/lib/appwrite/appwrite";
+import { WishlistProducts } from "@/lib/appwrite/types";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import { useInfiniteScroll } from "@heroui/use-infinite-scroll";

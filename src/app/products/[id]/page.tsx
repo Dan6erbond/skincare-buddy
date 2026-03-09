@@ -48,7 +48,7 @@ import {
   Products,
   Units,
   UnitsPeriodAfterOpeningUnit,
-} from "@/lib/appwrite/appwrite";
+} from "@/lib/appwrite/types";
 import { databaseId, tableIds } from "@/lib/appwrite/const";
 import { getLocalTimeZone, parseDate } from "@internationalized/date";
 import { use, useMemo, useState } from "react";

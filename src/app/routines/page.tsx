@@ -10,7 +10,7 @@ import { CreateRoutineModal } from "@/components/routine/create-modal";
 import { LexicalRenderer } from "@/components/ui/rich-text";
 import Link from "next/link";
 import { Query } from "appwrite";
-import { Routines } from "@/lib/appwrite/appwrite";
+import { Routines } from "@/lib/appwrite/types";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import { useQuery } from "@tanstack/react-query";

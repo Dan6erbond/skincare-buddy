@@ -22,7 +22,7 @@ import { Heart } from "lucide-react";
 import { Query } from "appwrite";
 import { Rating } from "@/components/ui/rating";
 import { Ref } from "react";
-import { WishlistProducts } from "@/lib/appwrite/appwrite";
+import { WishlistProducts } from "@/lib/appwrite/types";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import { useInfiniteScroll } from "@heroui/use-infinite-scroll";

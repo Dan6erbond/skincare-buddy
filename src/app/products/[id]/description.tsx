@@ -84,7 +84,7 @@ import { MarkdownTogglePlugin } from "@/components/editor/plugins/actions/markdo
 import { MentionsPlugin } from "@/components/editor/plugins/mentions";
 import { NumberedListPickerPlugin } from "@/components/editor/plugins/picker/numbered-list";
 import { ParagraphPickerPlugin } from "@/components/editor/plugins/picker/paragraph";
-import { Products } from "@/lib/appwrite/appwrite";
+import { Products } from "@/lib/appwrite/types";
 import { QuotePickerPlugin } from "@/components/editor/plugins/picker/quote";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { SubSuperToolbarPlugin } from "@/components/editor/plugins/toolbar/sub-super";

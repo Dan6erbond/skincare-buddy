@@ -16,7 +16,7 @@ import {
 } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { Products } from "@/lib/appwrite/appwrite";
+import { Products } from "@/lib/appwrite/types";
 import { useAppwrite } from "@/contexts/appwrite";
 
 interface Props {

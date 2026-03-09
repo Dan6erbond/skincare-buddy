@@ -8,7 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ModelCreate } from "@/lib/appwrite/utils";
 import { ProfileFormValues } from "@/lib/schema/profile";
-import { Profiles } from "@/lib/appwrite/appwrite";
+import { Profiles } from "@/lib/appwrite/types";
 import { addToast } from "@heroui/react";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";

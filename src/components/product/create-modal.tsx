@@ -21,7 +21,7 @@ import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { ID, Permission, Role } from "appwrite";
 import { Plus, Trash2 } from "lucide-react";
 import { ProductFormValues, ProductSchema } from "@/lib/schema";
-import { Products, UnitsPeriodAfterOpeningUnit } from "@/lib/appwrite/appwrite";
+import { Products, UnitsPeriodAfterOpeningUnit } from "@/lib/appwrite/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { ModelCreate } from "@/lib/appwrite/utils";

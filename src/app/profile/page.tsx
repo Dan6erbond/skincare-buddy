@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { ProfileFormValues, ProfileSchema } from "@/lib/schema/profile";
 
-import { ProfilesSkinType } from "@/lib/appwrite/appwrite";
+import { ProfilesSkinType } from "@/lib/appwrite/types";
 import { useEffect } from "react";
 import { useProfile } from "@/hooks/use-profile";
 import { zodResolver } from "@hookform/resolvers/zod";
