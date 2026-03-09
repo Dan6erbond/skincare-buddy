@@ -177,7 +177,7 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
-      <header className="flex justify-between items-start">
+      <header className="flex flex-col md:flex-row gap-4 justify-between items-start">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <h1 className="text-4xl font-black uppercase tracking-tighter italic">
@@ -227,7 +227,7 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
             aria-label="Regiments"
             color="secondary"
             variant="bordered"
-            className="mb-2"
+            className="mb-2 max-w-full"
             classNames={{ tabList: "border-1 border-default-200" }}
           >
             {routine.regiment?.map((reg) => (

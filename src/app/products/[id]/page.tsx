@@ -282,7 +282,7 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
       {/* Header Card */}
       <Card className="p-4 shadow-sm border-none bg-default-50/50">
         <CardBody className="gap-6">
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-start">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <FlaskConical className="text-primary" size={20} />
@@ -290,11 +290,11 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
                   Formula
                 </span>
               </div>
-              <div className="flex gap-4 items-center">
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                 <h1 className="text-4xl font-black uppercase tracking-tight">
                   {product.name}
                 </h1>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 mb-2">
                   <AddToWishlistModal product={product} />
                   <EditProductModal product={product} />
                   <ArchiveProductModal product={product} />
