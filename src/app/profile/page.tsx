@@ -70,7 +70,7 @@ export default function ProfilePage() {
   if (isLoading) return <ProfileSkeleton />;
 
   return (
-    <div className="relative min-h-screen pb-20">
+    <div className="relative min-h-screen p-4 md:p-8 container mx-auto w-full">
       {/* Decorative Background */}
       <div className="fixed inset-0 -z-10">
         {/* Soft Mesh Gradients */}

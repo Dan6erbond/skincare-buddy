@@ -1,1213 +1,138 @@
 "use client";
 
-import * as queryKeys from "@/lib/query/keys";
-
 import {
-  ActivityIcon,
-  AlertCircle,
-  Archive,
-  ArrowDownUp,
-  ArrowDownWideNarrow,
-  ArrowUpNarrowWide,
-  Beaker,
-  Bookmark,
-  Box,
-  ChevronRight,
-  DollarSign,
-  FlaskConical,
+  ArrowRight,
+  Calendar,
   Heart,
-  ListTodo,
-  MoreHorizontal,
+  LayoutDashboard,
   Package,
-  Plus,
-  Search,
   Sparkles,
-  Star,
-  Tag,
-  Trash2,
-  Type,
-} from "lucide-react";
-import {
-  Button,
-  ButtonGroup,
-  Card,
-  CardBody,
-  Chip,
-  DatePicker,
-  Divider,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownTrigger,
-  Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  NumberInput,
-  Pagination,
-  Select,
-  SelectItem,
-  Skeleton,
-  Switch,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-  Tabs,
   User,
-  addToast,
-  useDisclosure,
-} from "@heroui/react";
-import {
-  ComponentType,
-  ReactNode,
-  useCallback,
-  useMemo,
-  useState,
-} from "react";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
-import {
-  CreateRoutineSchema,
-  CreateRoutineValues,
-  ProductFormValues,
-  ProductSchema,
-} from "@/lib/schema";
-import { ID, Models, Permission, Query, Role } from "appwrite";
-import {
-  Products,
-  Routines,
-  UnitsPeriodAfterOpeningUnit,
-  WishlistProducts,
-} from "@/lib/appwrite/appwrite";
-import { databaseId, tableIds } from "@/lib/appwrite/const";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+} from "lucide-react";
+import { Button, Card, CardBody } from "@heroui/react";
 
-import { AddToWishlistModal } from "@/components/wishlist/add-modal";
-import { LexicalRenderer } from "@/components/ui/rich-text";
 import Link from "next/link";
-import { ModelCreate } from "@/lib/appwrite/utils";
-import { Rating } from "@/components/ui/rating";
-import { categories } from "@/lib/product/const";
-import { getExpiryDate } from "@/lib/product/utils";
-import { getLocalTimeZone } from "@internationalized/date";
-import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
-import { useDebounceValue } from "usehooks-ts";
-import { useProfile } from "@/hooks/use-profile";
-import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
 
-type ColumnDef = {
-  key: string;
-  label: string;
-  icon: ReactNode;
-  Cell: ComponentType<{ product: Products }>;
-};
-
-export default function Page() {
+export default function DashboardPage() {
   const { user } = useAuth();
-  const { tables } = useAppwrite();
-  const queryClient = useQueryClient();
-  const now = useMemo(() => new Date(), []);
 
-  const { profile } = useProfile();
-
-  const [showArchived, setShowArchived] = useState(false);
-  const [search, setSearch] = useDebounceValue("", 500);
-
-  const [perPage, setPerPage] = useState(25);
-  const [page, setPage] = useState(1);
-
-  const [sortDirections, setSortDirections] = useState<
-    Record<string, "asc" | "desc">
-  >({});
-
-  const sortOptions = useMemo(
-    () =>
-      [
-        { key: "brand", label: "Brand", icon: <Bookmark size={16} /> },
-        { key: "name", label: "Name", icon: <Type size={16} /> },
-        { key: "category", label: "Category", icon: <Tag size={16} /> },
-        { key: "price", label: "Price", icon: <DollarSign size={16} /> },
-        {
-          key: "rating",
-          label: "Rating",
-          icon: <Star size={16} />,
-          defaultDesc: true,
-        },
-        {
-          key: "archivedAt",
-          label: "Archived at",
-          icon: <Archive size={16} />,
-        },
-      ].filter(({ key }) => (showArchived ? true : key !== "archivedAt")),
-    [showArchived],
-  );
-
-  const activeColumns = useMemo(() => {
-    const columns: ColumnDef[] = [
-      {
-        key: "formula",
-        label: "Formula",
-        icon: <FlaskConical size={16} />,
-        Cell: ({ product }) => (
-          <User
-            name={product.name}
-            description={product.brand}
-            avatarProps={{
-              radius: "md",
-              color: "primary",
-              size: "sm",
-              className: "shrink-0 rounded-full",
-            }}
-          />
-        ),
-      },
-      {
-        key: "category",
-        label: "Category",
-        icon: <Tag size={16} />,
-        Cell: ({ product }) => (
-          <Chip
-            size="sm"
-            variant="flat"
-            color="secondary"
-            className="uppercase font-bold"
-          >
-            {product.category}
-          </Chip>
-        ),
-      },
-      {
-        key: "inventory",
-        label: "Inventory",
-        icon: <Box size={16} />,
-        Cell: ({ product }) => {
-          const activeUnits = product.units?.filter((u) => !u.finishedAt) || [];
-
-          return (
-            <div className="flex items-center gap-2">
-              <Package size={14} className="text-default-400" />
-              <span className="font-semibold">{activeUnits.length} Units</span>
-            </div>
-          );
-        },
-      },
-      {
-        key: "status",
-        label: "Status",
-        icon: <ActivityIcon size={16} />,
-        Cell: ({ product }) => {
-          const activeUnits = product.units?.filter((u) => !u.finishedAt) || [];
-          const openedUnit = activeUnits.find((u) => u.openedAt);
-          const urgentDate = activeUnits.reduce(
-            (earliest: Date | null, unit) => {
-              const exp = getExpiryDate(unit);
-
-              if (!earliest || (exp && exp < earliest)) return exp;
-              return earliest;
-            },
-            null,
-          );
-
-          return (
-            <div className="flex gap-2">
-              {openedUnit ? (
-                <Chip
-                  size="sm"
-                  color="success"
-                  variant="dot"
-                  className="uppercase"
-                >
-                  In Use
-                </Chip>
-              ) : (
-                <Chip
-                  size="sm"
-                  color="warning"
-                  variant="flat"
-                  className="uppercase"
-                >
-                  Stockpiled
-                </Chip>
-              )}
-              {urgentDate && urgentDate < now && (
-                <Chip
-                  size="sm"
-                  color="danger"
-                  startContent={<AlertCircle size={12} />}
-                  className="uppercase"
-                >
-                  Expired
-                </Chip>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        key: "rating",
-        label: "Rating",
-        icon: <Star size={16} />,
-        Cell: ({ product }) => <Rating value={product.rating ?? 0} />,
-      },
-      {
-        key: "price",
-        label: "Price",
-        icon: <DollarSign size={16} />,
-        Cell: ({ product }) => <p>{product.price.toLocaleString()}</p>,
-      },
-      {
-        key: "actions",
-        label: "Actions",
-        icon: <MoreHorizontal size={16} />,
-        Cell: ({ product }) => <AddToWishlistModal product={product} />,
-      },
-      {
-        key: "archivedAt",
-        label: "Archived at",
-        icon: <Archive size={16} />,
-        Cell: ({ product }) => (
-          <p>
-            {product.archivedAt &&
-              new Date(product.archivedAt).toLocaleDateString()}
-          </p>
-        ),
-      },
-    ];
-
-    return columns.filter(({ key }) =>
-      showArchived ? true : key !== "archivedAt",
-    );
-  }, [showArchived, now]);
-
-  const { data: { rows: products = [], total = 0 } = {}, isLoading } = useQuery(
+  const navCards = [
     {
-      queryKey: queryKeys.products({
-        sortDirections,
-        page,
-        perPage,
-        search,
-        showArchived,
-      }),
-      queryFn: async ({
-        queryKey: [_, { sortDirections, page, perPage, search, showArchived }],
-      }) => {
-        if (!user?.$id) return {} as Models.RowList<Products>;
-
-        const orderQueries = Object.entries(sortDirections).map(([key, dir]) =>
-          dir === "desc" ? Query.orderDesc(key) : Query.orderAsc(key),
-        );
-
-        const res = await tables.listRows<Products>({
-          databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-          tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
-          queries: [
-            Query.equal("userId", user.$id),
-            ...(showArchived ? [] : [Query.isNull("archivedAt")]),
-            ...(search
-              ? [
-                  Query.or([
-                    Query.search("name", search),
-                    Query.search("brand", search),
-                    Query.search("category", search),
-                  ]),
-                ]
-              : []),
-            Query.select(["*", "units.*"]),
-            ...orderQueries,
-            Query.orderAsc("$updatedAt"),
-            Query.orderAsc("$createdAt"),
-            Query.offset((page - 1) * perPage),
-            Query.limit(perPage),
-          ],
-        });
-
-        return res;
-      },
-      enabled: !!user?.$id,
+      title: "My Shelf",
+      description: "Manage your current products and inventory.",
+      href: "/products",
+      icon: <Package className="size-6 text-primary" />,
+      stats: "View All Products",
+      color: "primary",
     },
-  );
-
-  const copyInventoryToAI = useCallback(() => {
-    if (!products.length) {
-      addToast({
-        title: "Export Failed",
-        description: "Your shelf is currently empty.",
-        color: "danger",
-      });
-      return;
-    }
-
-    let profileSection =
-      "### User Skin Profile\n*No profile details provided.*\n\n";
-
-    if (profile) {
-      const skinType = profile.skinType || "Not specified";
-      const sensitivity = profile.hasSensitiveSkin ? "Yes (Sensitive)" : "No";
-      const concerns = profile.skinIssues?.length
-        ? profile.skinIssues.join(", ")
-        : "None listed";
-
-      profileSection =
-        `### User Skin Profile\n` +
-        `- **Skin Type:** ${skinType}\n` +
-        `- **Sensitive:** ${sensitivity}\n` +
-        `- **Concerns:** ${concerns}\n\n`;
-    }
-
-    const header =
-      `### Skincare Inventory Analysis Request\n` +
-      `*User Shelf Export - ${new Date().toLocaleDateString()}*\n\n` +
-      `Please review my current products. Focus on ingredient synergies, potential irritation risks, and routine optimization.\n\n---\n`;
-
-    const inventoryHeader = `### Current Inventory\n`;
-
-    const inventoryBody = products
-      .map((p) => {
-        const rating = p.rating ? "★".repeat(p.rating) : "No rating";
-        const activeUnits = p.units?.filter((u) => !u.finishedAt).length || 0;
-
-        return `**${p.brand}: ${p.name}** (${p.category})
-- Status: ${activeUnits} units in stock
-- My Rating: ${rating}`;
-      })
-      .join("\n\n");
-
-    const finalClipboardText =
-      header + profileSection + inventoryHeader + inventoryBody;
-
-    navigator.clipboard
-      .writeText(finalClipboardText)
-      .then(() => {
-        addToast({
-          title: "Copied to Clipboard",
-          description: "Inventory formatted for AI analysis.",
-          color: "success",
-          shouldShowTimeoutProgress: true,
-        });
-      })
-      .catch(() => {
-        addToast({
-          title: "Copy Error",
-          description: "Could not access clipboard.",
-          color: "danger",
-        });
-      });
-  }, [products, profile]);
-
-  const { data: routines = [], isLoading: loadingRoutines } = useQuery({
-    queryKey: queryKeys.routines(),
-    queryFn: async () => {
-      const res = await tables.listRows<Routines>({
-        databaseId,
-        tableId: tableIds.routines,
-        queries: [Query.equal("userId", user!.$id)],
-      });
-      return res.rows;
+    {
+      title: "Routines",
+      description: "Daily AM & PM regiments tailored for you.",
+      href: "/routines",
+      icon: <Calendar className="size-6 text-secondary" />,
+      stats: "Manage Steps",
+      color: "secondary",
     },
-    enabled: !!user?.$id,
-  });
-
-  const { data: wishlist = [], isLoading: loadingWishlist } = useQuery({
-    queryKey: queryKeys.wishlist(),
-    queryFn: async () => {
-      const res = await tables.listRows<WishlistProducts>({
-        databaseId,
-        tableId: tableIds.wishlist,
-        queries: [
-          Query.equal("userId", user!.$id),
-          Query.select(["*", "product.*"]),
-          Query.orderDesc("$updatedAt"),
-          Query.orderDesc("$createdAt"),
-        ],
-      });
-      return res.rows;
+    {
+      title: "Wishlist",
+      description: "Keep track of products you want to try next.",
+      href: "/wishlist",
+      icon: <Heart className="size-6 text-danger" />,
+      stats: "Saved Items",
+      color: "danger",
     },
-    enabled: !!user?.$id,
-  });
-
-  const { mutate: removeFromWishlist } = useMutation({
-    mutationFn: async (wishlistId: string) => {
-      return await tables.deleteRow({
-        databaseId,
-        tableId: tableIds.wishlist,
-        rowId: wishlistId,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.wishlist() });
-      addToast({
-        title: "Removed",
-        description: "Product removed from wishlist.",
-        color: "warning",
-      });
-    },
-  });
+  ];
 
   return (
-    <div className="flex flex-col gap-8 p-4 md:p-8 container mx-auto w-full">
-      <header className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-end">
-        <div>
-          <h1 className="text-3xl font-bold uppercase tracking-tight flex items-center gap-2">
-            My Vanity <Beaker className="text-primary" />
-          </h1>
-          <p className="text-default-500 italic">Welcome back, {user?.name}</p>
-        </div>
-        <div className="flex gap-2">
-          <CreateRoutineModal />
-          <CreateProductModal />
-        </div>
-      </header>
+    <div className="relative min-h-screen p-4 md:p-8 container mx-auto w-full">
+      {/* Decorative Background (Matches Profile Page) */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary-200/20 blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[-5%] w-[40%] h-[50%] rounded-full bg-secondary-200/20 blur-[100px]" />
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      </div>
 
-      <Tabs
-        aria-label="Dashboard Options"
-        color="primary"
-        variant="underlined"
-        classNames={{
-          tab: "h-12",
-        }}
-      >
-        <Tab
-          key="shelf"
-          title={
-            <div className="flex items-center gap-2 uppercase font-bold">
-              <Package size={18} /> <span>Product Shelf</span>
+      <div className="max-w-5xl mx-auto px-4 pt-12">
+        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-white shadow-sm border border-default-100">
+              <LayoutDashboard className="size-8 text-primary" />
             </div>
-          }
-        >
-          <div className="space-y-4">
-            {/* Action Bar */}
-            <div className="flex justify-between items-center bg-default-50 p-3 rounded-xl border border-divider">
-              <div className="text-small text-default-500 font-medium">
-                Total Items:{" "}
-                <span className="text-primary font-bold">
-                  {products.length}
-                </span>
-              </div>
-              <Button
-                size="sm"
-                color="secondary"
-                variant="flat"
-                onPress={copyInventoryToAI}
-                startContent={<Sparkles size={16} />} // Using Sparkles to imply AI/Magic
-                className="font-bold uppercase tracking-wider"
-              >
-                Export for AI
-              </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                Welcome back, {user?.name?.split(" ")[0] || "Glow Getter"}!
+              </h1>
+              <p className="text-default-500 flex items-center gap-1">
+                <Sparkles className="size-4 text-secondary" />
+                Your skincare journey is looking bright today.
+              </p>
             </div>
+          </div>
+          <Button
+            as={Link}
+            href="/profile"
+            variant="flat"
+            color="primary"
+            className="font-medium"
+            startContent={<User />}
+          >
+            Edit Skin Profile
+          </Button>
+        </header>
 
-            <Table
-              topContent={
-                <div className="flex justify-end items-end gap-4">
-                  <Input
-                    label="Search..."
-                    labelPlacement="outside"
-                    startContent={
-                      <Search className="size-5 text-default-400" />
-                    }
-                    size="sm"
-                    onValueChange={setSearch}
-                    className="max-w-xs"
-                  />
-                  <Switch
-                    size="sm"
-                    color="secondary"
-                    isSelected={showArchived}
-                    onValueChange={setShowArchived}
-                    thumbIcon={({ isSelected, className }) =>
-                      isSelected ? (
-                        <div className={className}>
-                          <Archive className="size-3" />
-                        </div>
-                      ) : (
-                        <div className={className}>
-                          <Package className="size-3" />
-                        </div>
-                      )
-                    }
-                  >
-                    <span className="text-tiny uppercase font-bold text-default-500">
-                      {showArchived ? "Viewing Archive" : "Show Archived"}
-                    </span>
-                  </Switch>
-
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <Button
-                        variant="flat"
-                        size="sm"
-                        startContent={<ArrowDownUp size={16} />}
-                        className="font-bold uppercase"
-                      >
-                        Sort ({Object.keys(sortDirections).length})
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      aria-label="Multiple Sort Selection"
-                      variant="flat"
-                      closeOnSelect={false}
-                      selectionMode="multiple"
-                      selectedKeys={new Set(Object.keys(sortDirections))}
-                      onAction={(key) => {
-                        const sortOption = sortOptions.find(
-                          (opt) => opt.key === key,
-                        )!;
-
-                        if (key in sortDirections) {
-                          if (
-                            sortOption.defaultDesc &&
-                            sortDirections[key] === "desc"
-                          ) {
-                            setSortDirections((prev) => ({
-                              ...prev,
-                              [key]: "asc" as const,
-                            }));
-                          } else if (
-                            !sortOption.defaultDesc &&
-                            sortDirections[key] === "asc"
-                          ) {
-                            setSortDirections((prev) => ({
-                              ...prev,
-                              [key]: "desc" as const,
-                            }));
-                          } else {
-                            setSortDirections(
-                              Object.fromEntries(
-                                Object.entries(sortDirections).filter(
-                                  ([k]) => k !== key,
-                                ),
-                              ),
-                            );
-                          }
-                        } else {
-                          setSortDirections((prev) => ({
-                            ...prev,
-                            [key]: sortOption.defaultDesc
-                              ? ("desc" as const)
-                              : ("asc" as const),
-                          }));
-                        }
-                      }}
-                    >
-                      {sortOptions.map((item) => {
-                        const isSelected = item.key in sortDirections;
-                        const direction = sortDirections[item.key];
-
-                        return (
-                          <DropdownItem
-                            key={item.key}
-                            startContent={item.icon}
-                            endContent={
-                              isSelected ? (
-                                direction === "desc" ? (
-                                  <ArrowUpNarrowWide
-                                    size={16}
-                                    className="text-primary"
-                                  />
-                                ) : (
-                                  <ArrowDownWideNarrow
-                                    size={16}
-                                    className="text-primary"
-                                  />
-                                )
-                              ) : (
-                                <ArrowDownUp
-                                  size={16}
-                                  className="text-default-300 opacity-50"
-                                />
-                              )
-                            }
-                            className={
-                              isSelected ? "text-primary" : "text-default-500"
-                            }
-                          >
-                            {item.label}
-                          </DropdownItem>
-                        );
-                      })}
-                    </DropdownMenu>
-                  </Dropdown>
-                </div>
-              }
-              bottomContent={
-                <div className="flex justify-between">
-                  <div>
-                    {Math.ceil(total / perPage) > 1 && (
-                      <Pagination
-                        total={Math.ceil(total / perPage)}
-                        page={page}
-                        onChange={setPage}
-                      />
-                    )}
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <p>Per page</p>
-                    <ButtonGroup variant="ghost" size="sm">
-                      <Button
-                        variant={perPage === 10 ? "faded" : undefined}
-                        onPress={() => setPerPage(10)}
-                      >
-                        10
-                      </Button>
-                      <Button
-                        variant={perPage === 25 ? "faded" : undefined}
-                        onPress={() => setPerPage(25)}
-                      >
-                        25
-                      </Button>
-                      <Button
-                        variant={perPage === 100 ? "faded" : undefined}
-                        onPress={() => setPerPage(100)}
-                      >
-                        100
-                      </Button>
-                    </ButtonGroup>
-                  </div>
-                </div>
-              }
-              aria-label="Inventory"
+        {/* Navigation Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {navCards.map((card) => (
+            <Card
+              key={card.href}
+              as={Link}
+              href={card.href}
+              isPressable
+              className="border-none shadow-xl bg-background/60 backdrop-blur-md hover:scale-[1.02] transition-transform duration-300"
             >
-              <TableHeader columns={activeColumns}>
-                {({ key, icon, label }) => (
-                  <TableColumn key={key} className="uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      {icon}
-                      {label}
-                    </div>
-                  </TableColumn>
-                )}
-              </TableHeader>
-              <TableBody
-                items={products}
-                isLoading={isLoading}
-                emptyContent="Shelf is empty."
-              >
-                {(product) => (
-                  <TableRow
-                    key={product.$id}
-                    className="border-b border-divider last:border-none cursor-pointer hover:bg-content2"
-                    as={Link}
-                    href={`/products/${product.$id}`}
+              <CardBody className="p-6 flex flex-col justify-between min-h-50">
+                <div className="space-y-4">
+                  <div
+                    className={`p-3 rounded-xl w-fit bg-${card.color}-100/30`}
                   >
-                    {activeColumns.map(({ key, Cell }) => (
-                      <TableCell key={key}>
-                        <Cell product={product} />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </Tab>
-
-        <Tab
-          key="routines"
-          title={
-            <div className="flex items-center gap-2 uppercase font-bold">
-              <ListTodo size={18} /> <span>Routines</span>
-            </div>
-          }
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
-            {routines.map((routine) => (
-              <Card
-                key={routine.$id}
-                isPressable
-                as={Link}
-                href={`/routines/${routine.$id}`}
-                className="hover:border-secondary transition-colors border-1 border-transparent"
-              >
-                <CardBody className="p-4 flex flex-row justify-between items-center">
+                    {card.icon}
+                  </div>
                   <div>
-                    <p className="font-black uppercase tracking-tight">
-                      {routine.name}
+                    <h2 className="text-xl font-bold">{card.title}</h2>
+                    <p className="text-default-500 text-sm leading-relaxed">
+                      {card.description}
                     </p>
-                    {routine.description ? (
-                      <LexicalRenderer
-                        className="text-tiny text-default-500 line-clamp-1"
-                        state={JSON.parse(routine.description)}
-                      />
-                    ) : (
-                      <p className="text-tiny text-default-500 line-clamp-1">
-                        No description
-                      </p>
-                    )}
                   </div>
-                  <ChevronRight size={16} className="text-default-400" />
-                </CardBody>
-              </Card>
-            ))}
-            {routines.length === 0 && !loadingRoutines && (
-              <div className="col-span-full py-12 text-center bg-default-50 rounded-2xl border-2 border-dashed border-default-200">
-                <p className="text-default-400">
-                  No routines found. Create your first one!
-                </p>
-              </div>
-            )}
-          </div>
-        </Tab>
+                </div>
 
-        <Tab
-          key="wishlist"
-          title={
-            <div className="flex items-center gap-2 uppercase font-bold">
-              <Heart size={18} /> <span>Wishlist</span>
+                <div className="flex items-center justify-between pt-4 border-t border-default-100 mt-4">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-default-400">
+                    {card.stats}
+                  </span>
+                  <ArrowRight className="size-4 text-default-400" />
+                </div>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+
+        {/* Quick Tip / Placeholder for Alerts */}
+        <Card className="mt-8 border-none bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+          <CardBody className="p-6 flex flex-row items-center gap-6">
+            <div className="hidden sm:flex p-4 rounded-full bg-white/20">
+              <Sparkles className="size-6" />
             </div>
-          }
-        >
-          <div className="py-4">
-            {loadingWishlist ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-32 rounded-2xl" />
-                ))}
-              </div>
-            ) : wishlist.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-default-50 rounded-3xl border-2 border-dashed border-default-200">
-                <Heart size={48} className="text-default-300 mb-4" />
-                <p className="text-default-500 font-bold uppercase tracking-widest">
-                  Your wishlist is empty
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {wishlist.map((item) => (
-                  <Card
-                    key={item.$id}
-                    isPressable
-                    shadow="sm"
-                    onPress={() => removeFromWishlist(item.$id)}
-                    className="border-1 border-default-200 hover:border-danger transition-colors group"
-                  >
-                    <CardBody className="p-4 flex flex-row items-center justify-between">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-tiny font-bold text-danger uppercase tracking-tighter">
-                          {item.product.brand}
-                        </span>
-                        <h3 className="text-lg font-black leading-tight truncate">
-                          {item.product.name}
-                        </h3>
-                        <div className="flex gap-2 mt-1">
-                          <Chip
-                            size="sm"
-                            variant="flat"
-                            className="text-[10px] uppercase font-bold"
-                          >
-                            {item.product.category}
-                          </Chip>
-                          {item.product.rating && (
-                            <Rating value={item.product.rating ?? 0} />
-                          )}
-                        </div>
-                      </div>
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </Tab>
-      </Tabs>
+            <div className="flex-1">
+              <h3 className="font-bold text-lg">Pro Tip</h3>
+              <p className="text-primary-foreground/80 text-sm">
+                Consistency is key! Don&apos;t forget to log your evening
+                routine to track how your skin responds to your new products.
+              </p>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
     </div>
-  );
-}
-
-function CreateProductModal() {
-  const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
-  const { tables } = useAppwrite();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(ProductSchema),
-    defaultValues: {
-      name: "",
-      brand: "",
-      category: "serum",
-      price: 0,
-      units: [
-        {
-          periodAfterOpeningDuration: 12,
-          periodAfterOpeningUnit: UnitsPeriodAfterOpeningUnit.MONTHS,
-        },
-      ],
-    },
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "units",
-  });
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: async (values: ProductFormValues) => {
-      const unitsData = values.units?.map((u) => ({
-        purchaseDate:
-          u.purchaseDate?.toDate(getLocalTimeZone()).toISOString() ?? null,
-        expiresAt:
-          u.expiresAt?.toDate(getLocalTimeZone()).toISOString() ?? null,
-        openedAt: u.openedAt?.toDate(getLocalTimeZone()).toISOString() ?? null,
-        periodAfterOpeningDuration: u.periodAfterOpeningDuration,
-        periodAfterOpeningUnit: u.periodAfterOpeningUnit,
-      }));
-
-      return await tables.createRow<ModelCreate<Products>>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
-        rowId: ID.unique(),
-        data: {
-          name: values.name,
-          brand: values.brand,
-          category: values.category,
-          price: values.price,
-          userId: user!.$id,
-          units: unitsData,
-        },
-        permissions: [
-          Permission.read(Role.user(user!.$id)),
-          Permission.update(Role.user(user!.$id)),
-          Permission.delete(Role.user(user!.$id)),
-        ],
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.products(),
-      });
-      form.reset();
-      onClose();
-    },
-  });
-
-  return (
-    <>
-      <Button
-        onPress={onOpen}
-        color="primary"
-        variant="shadow"
-        startContent={<Plus size={18} />}
-        className="uppercase font-bold"
-      >
-        Add Formula
-      </Button>
-
-      <Modal
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-        scrollBehavior="inside"
-        size="2xl"
-      >
-        <ModalContent>
-          {(onClose) => (
-            <form onSubmit={form.handleSubmit((data) => mutate(data))}>
-              <ModalHeader className="uppercase tracking-tighter text-2xl font-black">
-                New Product Batch
-              </ModalHeader>
-
-              <ModalBody className="gap-6 pb-8">
-                {/* Section 1: Brand & Name */}
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    {...form.register("brand")}
-                    label="Brand"
-                    placeholder="e.g. Drunk Elephant"
-                    variant="bordered"
-                    labelPlacement="outside"
-                    isInvalid={!!form.formState.errors.brand}
-                    errorMessage={form.formState.errors.brand?.message}
-                  />
-                  <Input
-                    {...form.register("name")}
-                    label="Product Name"
-                    placeholder="e.g. C-Firma Fresh"
-                    variant="bordered"
-                    labelPlacement="outside"
-                    isInvalid={!!form.formState.errors.name}
-                    errorMessage={form.formState.errors.name?.message}
-                  />
-                </div>
-
-                {/* Section 2: Category & Price */}
-                <div className="grid grid-cols-2 gap-4">
-                  <Controller
-                    name="category"
-                    control={form.control}
-                    render={({
-                      field: { value, onChange, ...field },
-                      fieldState: { invalid, error },
-                    }) => (
-                      <Select
-                        {...field}
-                        label="Category"
-                        variant="bordered"
-                        labelPlacement="outside"
-                        selectedKeys={[value]}
-                        onSelectionChange={(k) => onChange(Array.from(k)[0])}
-                        isInvalid={invalid}
-                        errorMessage={error?.message}
-                      >
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.key}>{cat.label}</SelectItem>
-                        ))}
-                      </Select>
-                    )}
-                  />
-                  <Controller
-                    name="price"
-                    control={form.control}
-                    render={({
-                      field: { value, onChange, ...field },
-                      fieldState: { invalid, error },
-                    }) => (
-                      <NumberInput
-                        label="Price"
-                        variant="bordered"
-                        labelPlacement="outside"
-                        onValueChange={onChange}
-                        value={value}
-                        isInvalid={invalid}
-                        errorMessage={error?.message}
-                        {...field}
-                      />
-                    )}
-                  />
-                </div>
-
-                <Divider />
-
-                {/* Section 3: Units Management */}
-                <div className="flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-tiny font-bold uppercase text-default-500">
-                      Inventory Units (Bottles/Jars)
-                    </h4>
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      color="primary"
-                      startContent={<Plus size={14} />}
-                      onPress={() =>
-                        append({
-                          periodAfterOpeningDuration: 12,
-                          periodAfterOpeningUnit:
-                            UnitsPeriodAfterOpeningUnit.MONTHS,
-                        })
-                      }
-                    >
-                      Add Unit
-                    </Button>
-                  </div>
-
-                  {fields.map((field, index) => (
-                    <div
-                      key={field.id}
-                      className="p-4 rounded-xl border-1 border-default-200 bg-default-50 flex flex-col gap-4 relative"
-                    >
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        color="danger"
-                        variant="light"
-                        className="absolute top-2 right-2"
-                        onPress={() => remove(index)}
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <Controller
-                          name={`units.${index}.purchaseDate`}
-                          control={form.control}
-                          render={({
-                            field,
-                            fieldState: { invalid, error },
-                          }) => (
-                            <DatePicker
-                              {...field}
-                              label="Purchase Date"
-                              size="sm"
-                              isInvalid={invalid}
-                              errorMessage={error?.message}
-                            />
-                          )}
-                        />
-                        <Controller
-                          name={`units.${index}.expiresAt`}
-                          control={form.control}
-                          render={({
-                            field,
-                            fieldState: { invalid, error },
-                          }) => (
-                            <DatePicker
-                              {...field}
-                              label="Expiry Date"
-                              size="sm"
-                              isInvalid={invalid}
-                              errorMessage={error?.message}
-                            />
-                          )}
-                        />
-                      </div>
-
-                      <div className="flex gap-2 items-end">
-                        <div className="flex-1">
-                          <Controller
-                            name={`units.${index}.periodAfterOpeningDuration`}
-                            control={form.control}
-                            render={({
-                              field: { value, onChange, ...field },
-                              fieldState: { invalid, error },
-                            }) => (
-                              <NumberInput
-                                label="PAO Duration"
-                                size="sm"
-                                onValueChange={onChange}
-                                value={value ?? undefined}
-                                isInvalid={invalid}
-                                errorMessage={error?.message}
-                                {...field}
-                              />
-                            )}
-                          />
-                        </div>
-                        <Controller
-                          name={`units.${index}.periodAfterOpeningUnit`}
-                          control={form.control}
-                          render={({
-                            field: { value, onChange, ...field },
-                            fieldState: { invalid, error },
-                          }) => (
-                            <Select
-                              label="Unit"
-                              size="sm"
-                              className="w-32"
-                              selectedKeys={value ? [value] : []}
-                              onSelectionChange={(k) =>
-                                onChange(Array.from(k)[0])
-                              }
-                              isInvalid={invalid}
-                              errorMessage={error?.message}
-                              {...field}
-                            >
-                              <SelectItem key="months">Months</SelectItem>
-                              <SelectItem key="years">Years</SelectItem>
-                            </Select>
-                          )}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ModalBody>
-
-              <ModalFooter className="border-t-1 border-default-100">
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Discard
-                </Button>
-                <Button
-                  color="primary"
-                  type="submit"
-                  isLoading={isPending}
-                  className="uppercase font-bold px-8"
-                >
-                  Save Formula & {fields.length} Units
-                </Button>
-              </ModalFooter>
-            </form>
-          )}
-        </ModalContent>
-      </Modal>
-    </>
-  );
-}
-
-function CreateRoutineModal() {
-  const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
-  const { tables } = useAppwrite();
-  const { user } = useAuth();
-  const router = useRouter();
-
-  const form = useForm<CreateRoutineValues>({
-    resolver: zodResolver(CreateRoutineSchema),
-    defaultValues: { name: "" },
-  });
-
-  const { mutate: createRoutine, isPending } = useMutation({
-    mutationFn: async (values: CreateRoutineValues) => {
-      const routineId = ID.unique();
-      await tables.createRow({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_ROUTINES_TABLE_ID!,
-        rowId: routineId,
-        data: {
-          userId: user!.$id,
-          name: values.name,
-        },
-        permissions: [
-          Permission.read(Role.user(user!.$id)),
-          Permission.update(Role.user(user!.$id)),
-          Permission.delete(Role.user(user!.$id)),
-        ],
-      });
-      return routineId;
-    },
-    onSuccess: (id) => {
-      onClose();
-      router.push(`/routines/${id}`);
-    },
-  });
-
-  return (
-    <>
-      <Button
-        onPress={onOpen}
-        color="secondary"
-        variant="flat"
-        startContent={<Plus size={18} />}
-        className="font-bold uppercase"
-      >
-        New Routine
-      </Button>
-
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
-        <ModalContent>
-          <form onSubmit={form.handleSubmit((data) => createRoutine(data))}>
-            <ModalHeader className="flex items-center gap-2 uppercase font-black">
-              <Sparkles className="text-secondary" size={20} /> Create Routine
-            </ModalHeader>
-            <ModalBody>
-              <Input
-                {...form.register("name")}
-                label="Routine Name"
-                placeholder="e.g. Winter Hydration"
-                variant="bordered"
-                isInvalid={!!form.formState.errors.name}
-                errorMessage={form.formState.errors.name?.message}
-              />
-            </ModalBody>
-            <ModalFooter>
-              <Button variant="light" onPress={onClose}>
-                Cancel
-              </Button>
-              <Button
-                color="secondary"
-                type="submit"
-                isLoading={isPending}
-                className="font-bold"
-              >
-                Create & Add Steps
-              </Button>
-            </ModalFooter>
-          </form>
-        </ModalContent>
-      </Modal>
-    </>
   );
 }
