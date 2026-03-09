@@ -2,54 +2,100 @@
 
 import * as queryKeys from "@/lib/query/keys";
 
-import { Beaker, Heart } from "lucide-react";
-import { Card, CardBody, Chip, Skeleton, addToast } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  Chip,
+  Skeleton,
+  Spinner,
+  addToast,
+} from "@heroui/react";
 import { databaseId, tableIds } from "@/lib/appwrite/const";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
-import { CreateProductModal } from "@/components/product/create-modal";
+import { CreateWishlistItemDrawer } from "@/components/wishlist/create-drawer";
+import { Heart } from "lucide-react";
 import { Query } from "appwrite";
 import { Rating } from "@/components/ui/rating";
+import { Ref } from "react";
 import { WishlistProducts } from "@/lib/appwrite/appwrite";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
+import { useInfiniteScroll } from "@heroui/use-infinite-scroll";
 
 export default function Page() {
   const { user } = useAuth();
   const { tables } = useAppwrite();
   const queryClient = useQueryClient();
+  const limit = 12;
 
-  const { data: wishlist = [], isLoading: loadingWishlist } = useQuery({
-    queryKey: queryKeys.wishlist(),
-    queryFn: async () => {
-      const res = await tables.listRows<WishlistProducts>({
-        databaseId,
-        tableId: tableIds.wishlist,
-        queries: [
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: queryKeys.wishlist({ isDeleted: false }),
+      queryFn: async ({ pageParam }) => {
+        const queries = [
           Query.equal("userId", user!.$id),
+          Query.isNull("deletedAt"),
           Query.select(["*", "product.*"]),
-          Query.orderDesc("$updatedAt"),
           Query.orderDesc("$createdAt"),
-        ],
-      });
-      return res.rows;
-    },
-    enabled: !!user?.$id,
+          Query.limit(limit),
+        ];
+
+        if (pageParam) queries.push(Query.cursorAfter(pageParam));
+
+        return await tables.listRows<WishlistProducts>({
+          databaseId,
+          tableId: tableIds.wishlist,
+          queries,
+        });
+      },
+      initialPageParam: null as string | null,
+      getNextPageParam: (lastPage) => {
+        if (lastPage.rows.length < limit) return undefined;
+        return lastPage.rows[lastPage.rows.length - 1].$id;
+      },
+      enabled: !!user?.$id,
+    });
+
+  const items = data?.pages.flatMap((p) => p.rows) ?? [];
+
+  const [loaderRef, scrollerRef] = useInfiniteScroll({
+    hasMore: hasNextPage,
+    onLoadMore: fetchNextPage,
   });
 
   const { mutate: removeFromWishlist } = useMutation({
-    mutationFn: async (wishlistId: string) => {
-      return await tables.deleteRow({
+    mutationFn: async (item: WishlistProducts) => {
+      // If it has a linked product, hard delete.
+      // If it's a custom item (has a name), soft delete.
+      if (item.product?.$id) {
+        return await tables.deleteRow({
+          databaseId,
+          tableId: tableIds.wishlist,
+          rowId: item.$id,
+        });
+      }
+
+      return await tables.updateRow({
         databaseId,
         tableId: tableIds.wishlist,
-        rowId: wishlistId,
+        rowId: item.$id,
+        data: {
+          deletedAt: new Date().toISOString(),
+        },
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.wishlist() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.wishlist(),
+      });
       addToast({
         title: "Removed",
-        description: "Product removed from wishlist.",
+        description: "Moved to history.",
         color: "warning",
       });
     },
@@ -60,66 +106,73 @@ export default function Page() {
       <header className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-end">
         <div>
           <h1 className="text-3xl font-bold uppercase tracking-tight flex items-center gap-2">
-            My Routines <Beaker className="text-primary" />
+            Wishlist <Heart className="text-primary fill-primary" />
           </h1>
           <p className="text-default-500 italic">Welcome back, {user?.name}</p>
         </div>
-        <div className="flex gap-2">
-          <CreateProductModal />
-        </div>
+        <CreateWishlistItemDrawer />
       </header>
 
-      <div className="py-4">
-        {loadingWishlist ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-32 rounded-2xl" />
-            ))}
-          </div>
-        ) : wishlist.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-default-50 rounded-3xl border-2 border-dashed border-default-200">
-            <Heart size={48} className="text-default-300 mb-4" />
-            <p className="text-default-500 font-bold uppercase tracking-widest">
-              Your wishlist is empty
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {wishlist.map((item) => (
-              <Card
-                key={item.$id}
-                isPressable
-                shadow="sm"
-                onPress={() => removeFromWishlist(item.$id)}
-                className="border-1 border-default-200 hover:border-danger transition-colors group"
-              >
-                <CardBody className="p-4 flex flex-row items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-tiny font-bold text-danger uppercase tracking-tighter">
-                      {item.product.brand}
-                    </span>
-                    <h3 className="text-lg font-black leading-tight truncate">
-                      {item.product.name}
-                    </h3>
-                    <div className="flex gap-2 mt-1">
-                      <Chip
-                        size="sm"
-                        variant="flat"
-                        className="text-[10px] uppercase font-bold"
-                      >
-                        {item.product.category}
-                      </Chip>
-                      {item.product.rating && (
-                        <Rating value={item.product.rating ?? 0} />
-                      )}
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
+      <div
+        ref={scrollerRef as Ref<HTMLDivElement>}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto max-h-[calc(100vh-200px)] p-1"
+      >
+        {items.map((item) => (
+          <Card
+            key={item.$id}
+            isPressable
+            shadow="sm"
+            onPress={() => removeFromWishlist(item)}
+            className="border-1 border-default-200 hover:border-danger transition-colors group"
+          >
+            <CardBody className="p-4 flex flex-row items-center justify-between">
+              <div className="flex flex-col gap-1 overflow-hidden">
+                <span className="text-tiny font-bold text-danger uppercase truncate">
+                  {item.product?.brand ?? "Custom Item"}
+                </span>
+                <h3 className="text-lg font-black leading-tight truncate">
+                  {item.product?.name ?? item.name}
+                </h3>
+                <div className="flex gap-2 mt-1">
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    className="text-[10px] uppercase font-bold"
+                  >
+                    {item.product?.category ?? "Untracked"}
+                  </Chip>
+                  {item.product?.rating && (
+                    <Rating value={item.product.rating} />
+                  )}
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        ))}
+
+        {(isLoading || isFetchingNextPage) &&
+          [...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))}
+
+        {hasNextPage && (
+          <div
+            ref={loaderRef as Ref<HTMLDivElement>}
+            className="col-span-full flex justify-center p-4"
+          >
+            <Spinner />
           </div>
         )}
       </div>
+
+      {!isLoading && items.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 bg-default-50 rounded-3xl border-2 border-dashed border-default-200">
+          <Heart size={48} className="text-default-300 mb-4" />
+          <p className="text-default-500 font-bold uppercase tracking-widest">
+            Your wishlist is empty
+          </p>
+        </div>
+      )}
     </main>
   );
 }

@@ -69,6 +69,8 @@ export type Steps = Models.Row & {
 export type WishlistProducts = Models.Row & {
     product: Products;
     userId: string;
+    name: string | null;
+    deletedAt: string | null;
 }
 
 export type Profiles = Models.Row & {

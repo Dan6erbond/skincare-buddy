@@ -9,31 +9,38 @@ import { addToast } from "@heroui/react";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 
+interface AddToWishlistProps {
+  product?: Products;
+  name?: string;
+  onSuccess?(): void;
+}
+
 export const useAddToWishlist = ({
   product,
+  name,
   onSuccess,
-}: {
-  product?: Products;
-  onSuccess?(): void;
-}) => {
+}: AddToWishlistProps) => {
   const { tables } = useAppwrite();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async () => {
+      if (!user?.$id) throw new Error("User not authenticated");
+
       return await tables.createRow({
         databaseId,
         tableId: tableIds.wishlist,
         rowId: ID.unique(),
         data: {
-          product: product!.$id, // Linking the product ID
-          userId: user!.$id,
+          product: product?.$id || null,
+          name: name || null,
+          userId: user.$id,
         },
         permissions: [
-          Permission.read(Role.user(user!.$id)),
-          Permission.update(Role.user(user!.$id)),
-          Permission.delete(Role.user(user!.$id)),
+          Permission.read(Role.user(user.$id)),
+          Permission.update(Role.user(user.$id)),
+          Permission.delete(Role.user(user.$id)),
         ],
       });
     },
@@ -41,12 +48,13 @@ export const useAddToWishlist = ({
       queryClient.invalidateQueries({ queryKey: queryKeys.wishlist() });
       addToast({
         title: "Added to Wishlist",
-        description: `${product!.name} is now on your shopping list.`,
+        description: `${product?.name || name} is now on your list.`,
         color: "success",
       });
       onSuccess?.();
     },
-    onError: () => {
+    onError: (error) => {
+      console.error(error);
       addToast({
         title: "Error",
         description: "Could not add to wishlist. Try again later.",

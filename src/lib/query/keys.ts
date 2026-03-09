@@ -26,6 +26,11 @@ export const routine = (id: string) => ["routines", id] as const;
 
 export const step = (id: string) => ["steps", id] as const;
 
-export const wishlist = () => ["wishlist"] as const;
+export function wishlist(props?: {
+  isDeleted?: boolean;
+  hasName?: boolean;
+}): ["wishlist", typeof props] | ["wishlist"] {
+  return props ? ["wishlist", props] : ["wishlist"];
+}
 
 export const profile = (userId?: string) => ["profile", userId] as const;
