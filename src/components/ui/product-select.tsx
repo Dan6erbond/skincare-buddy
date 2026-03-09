@@ -54,7 +54,6 @@ export default function ProductSelect(props: Omit<SelectProps, "children">) {
     isEnabled: isOpen,
     shouldUseLoader: false,
     onLoadMore: () => {
-      console.log("onLoadMore");
       if (!isFetching) fetchNextPage();
     },
   });
@@ -67,7 +66,7 @@ export default function ProductSelect(props: Omit<SelectProps, "children">) {
       scrollRef={scrollerRef}
       items={products}
       isOpen={isOpen}
-      onOpenChange={setIsOpen} 
+      onOpenChange={setIsOpen}
       {...props}
     >
       {
