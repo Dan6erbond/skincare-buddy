@@ -6,15 +6,19 @@ import {
   Autocomplete,
   AutocompleteItem,
   Button,
-  Chip,
+  Card,
+  CardBody,
   Drawer,
   DrawerBody,
   DrawerContent,
   DrawerFooter,
   DrawerHeader,
+  Spinner,
   useDisclosure,
 } from "@heroui/react";
+import { History, Plus } from "lucide-react";
 import { ID, Permission, Query, Role } from "appwrite";
+import { Ref, useState } from "react";
 import { databaseId, tableIds } from "@/lib/appwrite/const";
 import {
   useInfiniteQuery,
@@ -22,19 +26,21 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import { Plus } from "lucide-react";
 import { WishlistProducts } from "@/lib/appwrite/appwrite";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import { useInfiniteScroll } from "@heroui/use-infinite-scroll";
-import { useState } from "react";
 
 export function CreateWishlistItemDrawer() {
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { tables } = useAppwrite();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
+  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
   const [value, setValue] = useState("");
+
   const limit = 10;
 
   // 1. Fetch soft-deleted items with names for Autocomplete
@@ -64,7 +70,17 @@ export function CreateWishlistItemDrawer() {
   });
 
   const deletedItems = data?.pages.flatMap((p) => p.rows) ?? [];
-  const [, scrollerRef] = useInfiniteScroll({
+
+  // 1. Scroll for the Autocomplete Dropdown
+  const [, autocompleteScrollRef] = useInfiniteScroll({
+    hasMore: hasNextPage,
+    onLoadMore: fetchNextPage,
+    isEnabled: isAutocompleteOpen,
+    shouldUseLoader: false,
+  });
+
+  // 2. Scroll for the Quick-Add list at the bottom
+  const [historyLoaderRef, historyScrollRef] = useInfiniteScroll({
     hasMore: hasNextPage,
     onLoadMore: fetchNextPage,
     isEnabled: isOpen,
@@ -72,23 +88,40 @@ export function CreateWishlistItemDrawer() {
 
   // 2. Recovery / Creation Mutation
   const { mutate: handleAdd, isPending } = useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async ({
+      name,
+      wishlistProductId,
+    }: {
+      name?: string;
+      wishlistProductId?: string;
+    }) => {
       if (!user?.$id) return;
 
-      // 1. Check if a soft-deleted custom item with this name already exists
+      // Case 1: Direct restore via ID (from the history cards)
+      if (wishlistProductId) {
+        return await tables.updateRow({
+          databaseId,
+          tableId: tableIds.wishlist,
+          rowId: wishlistProductId,
+          data: { deletedAt: null },
+        });
+      }
+
+      if (!name) return;
+
+      // Case 2: Check if name typed matches a soft-deleted item
       const existing = await tables.listRows<WishlistProducts>({
         databaseId,
         tableId: tableIds.wishlist,
         queries: [
           Query.equal("userId", user.$id),
           Query.equal("name", name),
-          Query.isNull("product"), // Ensure it's a custom item
+          Query.isNull("product"),
           Query.limit(1),
         ],
       });
 
       if (existing.total > 0) {
-        // 2. Recover the existing row
         return await tables.updateRow({
           databaseId,
           tableId: tableIds.wishlist,
@@ -97,17 +130,12 @@ export function CreateWishlistItemDrawer() {
         });
       }
 
-      // 3. Otherwise, create a brand new one
+      // Case 3: Brand new custom item
       return await tables.createRow({
         databaseId,
         tableId: tableIds.wishlist,
         rowId: ID.unique(),
-        data: {
-          name,
-          userId: user.$id,
-          deletedAt: null,
-          product: null, // Explicitly null for custom items
-        },
+        data: { name, userId: user.$id, deletedAt: null },
         permissions: [
           Permission.read(Role.user(user.$id)),
           Permission.update(Role.user(user.$id)),
@@ -147,31 +175,69 @@ export function CreateWishlistItemDrawer() {
               </DrawerHeader>
               <DrawerBody>
                 <Autocomplete
-                  label="Product Name"
-                  placeholder="Type a new name or select from history"
+                  label="Search or Add New"
+                  placeholder="e.g. Silk Pillowcase"
                   variant="bordered"
                   inputValue={value}
                   onInputChange={setValue}
                   items={deletedItems}
                   isLoading={isFetching}
-                  scrollRef={scrollerRef}
+                  scrollRef={autocompleteScrollRef}
+                  onOpenChange={setIsAutocompleteOpen}
                   allowsCustomValue
                   onSelectionChange={(key) => {
                     const item = deletedItems.find((i) => i.$id === key);
-                    if (item) setValue(item.name!);
+                    if (item) handleAdd({ wishlistProductId: item.$id });
                   }}
                 >
                   {(item) => (
                     <AutocompleteItem key={item.$id} textValue={item.name!}>
-                      <div className="flex justify-between items-center">
-                        <span>{item.name}</span>
-                        <Chip size="sm" variant="dot" color="default">
-                          Previous
-                        </Chip>
-                      </div>
+                      {item.name}
                     </AutocompleteItem>
                   )}
                 </Autocomplete>
+
+                {/* History Quick-Add Section */}
+                <div className="flex flex-col gap-3 h-full overflow-hidden">
+                  <div className="flex items-center gap-2">
+                    <History size={14} className="text-default-400" />
+                    <p className="text-tiny font-bold text-default-400 uppercase tracking-wider">
+                      Recently Removed
+                    </p>
+                  </div>
+
+                  <div
+                    ref={historyScrollRef as Ref<HTMLDivElement>}
+                    className="flex flex-wrap gap-2 overflow-y-auto max-h-40 p-1 content-start"
+                  >
+                    {deletedItems.map((item) => (
+                      <Card
+                        key={item.$id}
+                        isPressable
+                        className="bg-content2 border-none shadow-none hover:bg-content3 transition-colors"
+                        onPress={() =>
+                          handleAdd({ wishlistProductId: item.$id })
+                        }
+                      >
+                        <CardBody className="py-2 px-3 flex flex-row items-center gap-2">
+                          <span className="text-small font-medium">
+                            {item.name}
+                          </span>
+                          <Plus size={14} className="text-primary" />
+                        </CardBody>
+                      </Card>
+                    ))}
+
+                    {hasNextPage && (
+                      <div
+                        ref={historyLoaderRef as Ref<HTMLDivElement>}
+                        className="w-full flex justify-center py-2"
+                      >
+                        <Spinner size="sm" />
+                      </div>
+                    )}
+                  </div>
+                </div>
               </DrawerBody>
               <DrawerFooter>
                 <Button color="danger" variant="light" onPress={onClose}>
@@ -180,7 +246,7 @@ export function CreateWishlistItemDrawer() {
                 <Button
                   color="primary"
                   isLoading={isPending}
-                  onPress={() => handleAdd(value)}
+                  onPress={() => handleAdd({ name: value })}
                   isDisabled={!value.trim()}
                 >
                   Save
