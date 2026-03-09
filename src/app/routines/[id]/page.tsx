@@ -512,11 +512,16 @@ function StepManager({
           {index + 1}
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0 w-full">
           <h4 className="font-bold uppercase text-medium">{step.name}</h4>
           <div className="flex gap-2 mt-1 flex-wrap">
             {step.products?.map((p) => (
-              <Chip key={p.$id} variant="flat">
+              <Chip
+                key={p.$id}
+                variant="flat"
+                className="min-w-0"
+                classNames={{ content: "truncate" }}
+              >
                 {p.brand} {p.name}
               </Chip>
             ))}
