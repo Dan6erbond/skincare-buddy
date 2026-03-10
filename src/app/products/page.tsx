@@ -380,7 +380,15 @@ export default function Page() {
                 size="sm"
                 color="secondary"
                 isSelected={showArchived}
-                onValueChange={setShowArchived}
+                onValueChange={(show) => {
+                  setShowArchived(show);
+                  if (show) {
+                    setSortDirections((prev) => ({
+                      ...prev,
+                      archivedAt: "desc",
+                    }));
+                  }
+                }}
                 thumbIcon={({ isSelected, className }) =>
                   isSelected ? (
                     <div className={className}>
