@@ -10,4 +10,10 @@ export const tableIds = {
   steps: "steps",
   wishlist: "wishlist_products",
   profiles: "profiles",
+  brands: "brands",
+  catalogProducts: "catalog_products",
 } as const;
+
+export const teamIds = {
+  admins: process.env.NEXT_PUBLIC_ADMIN_TEAM_ID!,
+};

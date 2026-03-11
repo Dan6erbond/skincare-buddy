@@ -553,6 +553,121 @@
                 }
             ],
             "indexes": []
+        },
+        {
+            "$id": "brands",
+            "$permissions": [
+                "create(\"team:69b1560c0009057775d8\")",
+                "read(\"team:69b1560c0009057775d8\")",
+                "update(\"team:69b1560c0009057775d8\")",
+                "delete(\"team:69b1560c0009057775d8\")"
+            ],
+            "databaseId": "skincare-buddy",
+            "name": "brands",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "name",
+                    "type": "varchar",
+                    "required": true,
+                    "array": false,
+                    "size": 1024,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "website",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "url"
+                },
+                {
+                    "key": "logoUrl",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "products",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "catalog_products",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "brand",
+                    "onDelete": "cascade",
+                    "side": "child"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "catalog_products",
+            "$permissions": [
+                "create(\"team:69b1560c0009057775d8\")",
+                "read(\"team:69b1560c0009057775d8\")",
+                "update(\"team:69b1560c0009057775d8\")",
+                "delete(\"team:69b1560c0009057775d8\")"
+            ],
+            "databaseId": "skincare-buddy",
+            "name": "catalog_products",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "name",
+                    "type": "varchar",
+                    "required": true,
+                    "array": false,
+                    "size": 1024,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "brand",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "brands",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "products",
+                    "onDelete": "cascade",
+                    "side": "parent"
+                },
+                {
+                    "key": "category",
+                    "type": "varchar",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "imageUrl",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "url"
+                },
+                {
+                    "key": "description",
+                    "type": "longtext",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
         }
     ]
 }

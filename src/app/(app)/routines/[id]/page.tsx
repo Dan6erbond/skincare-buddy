@@ -42,6 +42,7 @@ import {
   Routines,
   Steps,
 } from "@/lib/appwrite/types";
+import { databaseId, tableIds } from "@/lib/appwrite/const";
 import { use, useMemo, useState } from "react";
 import {
   useMutation,
@@ -70,8 +71,8 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
     queryKey: queryKeys.routine(id),
     queryFn: async () => {
       return await tables.getRow<Routines>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_ROUTINES_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.routines,
         rowId: id,
         // Ensure we select the relationship fields to populate the arrays
         queries: [
@@ -94,8 +95,8 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
           queryKey: queryKeys.step(step.$id),
           queryFn: async () => {
             return await tables.getRow<Steps>({
-              databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-              tableId: process.env.NEXT_PUBLIC_STEPS_TABLE_ID!,
+              databaseId,
+              tableId: tableIds.steps,
               rowId: step.$id,
               queries: [Query.select(["*", "products.*"])],
             });
@@ -272,8 +273,8 @@ function CreateRegimentModal({ routineId }: { routineId: string }) {
       return await tables.createRow<
         Omit<ModelCreate<Regiments>, "routine"> & { routine: string }
       >({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_REGIMENTS_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.regiments,
         rowId: ID.unique(),
         data: {
           type,
@@ -367,8 +368,8 @@ function CreateStepModal({ regimentId, routineId }: CreateStepModalProps) {
           products: string[];
         }
       >({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_STEPS_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.steps,
         rowId: ID.unique(),
         data: {
           name: values.name,
@@ -476,8 +477,8 @@ function StepManager({
     queryKey: queryKeys.step(stepId),
     queryFn: async () => {
       return await tables.getRow<Steps>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_STEPS_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.steps,
         rowId: stepId,
         queries: [Query.select(["*", "products.*"])],
       });
@@ -562,8 +563,8 @@ function StepSettingsDrawer({
           products: string[];
         }
       >({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_STEPS_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.steps,
         rowId: step.$id,
         data: {
           name: values.name,
@@ -584,8 +585,8 @@ function StepSettingsDrawer({
   const { mutate: deleteStep, isPending: isDeleting } = useMutation({
     mutationFn: async () => {
       return await tables.deleteRow({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_STEPS_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.steps,
         rowId: step.$id,
       });
     },

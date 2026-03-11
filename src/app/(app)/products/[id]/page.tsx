@@ -109,8 +109,8 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
     queryKey: queryKeys.product(id),
     queryFn: () =>
       tables.getRow<Products>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.products,
         rowId: id,
         queries: [Query.select(["*", "units.*"])],
       }),
@@ -143,8 +143,8 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
       data: Partial<Units>;
     }) => {
       return await tables.updateRow<Units>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_UNITS_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.units,
         rowId: unitId,
         data,
       });
@@ -185,8 +185,8 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
       return await tables.createRow<
         Omit<ModelCreate<Units>, "product"> & { product: string }
       >({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_UNITS_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.units,
         rowId: ID.unique(),
         data: {
           product: id,
@@ -215,8 +215,8 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
   const { mutate: updateRating } = useMutation({
     mutationFn: async (newRating: number) => {
       return await tables.updateRow<Products>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.products,
         rowId: id,
         data: { rating: newRating },
       });

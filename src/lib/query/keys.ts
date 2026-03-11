@@ -34,3 +34,33 @@ export function wishlist(props?: {
 }
 
 export const profile = (userId?: string) => ["profile", userId] as const;
+
+export const userTeamMemberships = (userId: string, teamId: string) =>
+  ["memberships", userId, teamId] as const;
+
+export function adminBrands(): ["admin", "brands"];
+
+export function adminBrands<
+  T extends { search?: string; page?: number; perPage?: number },
+>(filters: T): ["admin", "brands", T];
+
+export function adminBrands(filters?: object) {
+  const base = ["admin", "brands"] as const;
+  return filters ? [...base, filters] : base;
+}
+
+export function adminCatalog(): ["admin", "catalog"];
+
+export function adminCatalog<
+  T extends {
+    search?: string;
+    brandId?: string;
+    page?: number;
+    perPage?: number;
+  },
+>(filters: T): ["admin", "catalog", T];
+
+export function adminCatalog(filters?: object) {
+  const base = ["admin", "catalog"] as const;
+  return filters ? [...base, filters] : base;
+}

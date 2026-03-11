@@ -1,6 +1,6 @@
 "use client";
 
-import { Account, Client, Databases, Storage, TablesDB } from "appwrite";
+import { Account, Client, Databases, Storage, TablesDB, Teams } from "appwrite";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 
 import { useAuth } from "@/contexts/auth";
@@ -8,13 +8,14 @@ import { useAuth } from "@/contexts/auth";
 interface AppwriteContextType {
   client: Client;
   account: Account;
+  teams: Teams;
   databases: Databases;
   tables: TablesDB;
   storage: Storage;
 }
 
 const AppwriteContext = createContext<AppwriteContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export function AppwriteProvider({ children }: { children: ReactNode }) {
@@ -36,11 +37,12 @@ export function AppwriteProvider({ children }: { children: ReactNode }) {
     () => ({
       client,
       account: new Account(client),
+      teams: new Teams(client),
       databases: new Databases(client),
       tables: new TablesDB(client),
       storage: new Storage(client),
     }),
-    [client]
+    [client],
   );
 
   return (

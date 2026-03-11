@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "../../lib/hero.ts";
+@source "../../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: var(--font-geist-sans);
+  --font-lexend: var(--font-lexend-deca);
+}
+
+html {
+  @apply scroll-smooth;
+}
+
+:target {
+  @apply scroll-mt-16;
+}

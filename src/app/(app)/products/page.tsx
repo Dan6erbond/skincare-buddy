@@ -43,6 +43,7 @@ import {
 } from "@heroui/react";
 import { ComponentType, ReactNode, useMemo, useState } from "react";
 import { Models, Query } from "appwrite";
+import { databaseId, tableIds } from "@/lib/appwrite/const";
 
 import { AIExportButton } from "@/components/ui/ai-export-button";
 import { AddToWishlistModal } from "@/components/wishlist/add-modal";
@@ -259,8 +260,8 @@ export default function Page() {
         );
 
         const res = await tables.listRows<Products>({
-          databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-          tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
+          databaseId,
+          tableId: tableIds.products,
           queries: [
             Query.equal("userId", user.$id),
             ...(showArchived ? [] : [Query.isNull("archivedAt")]),
@@ -505,7 +506,7 @@ export default function Page() {
             </div>
           }
           bottomContent={
-            <div className="flex justify-between">
+            <div className="flex justify-between w-full min-w-0 flex-1">
               <div>
                 {Math.ceil(total / perPage) > 1 && (
                   <Pagination

@@ -1,12 +1,17 @@
 "use client";
 
+import * as queryKeys from "@/lib/query/keys";
+
 import {
-  Avatar,
+  Beaker,
+  Calendar,
+  Heart,
+  LayoutDashboard,
+  Package,
+  ShieldCheck,
+} from "lucide-react";
+import {
   Button,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownTrigger,
   Navbar,
   NavbarBrand,
   NavbarContent,
@@ -14,27 +19,38 @@ import {
   NavbarMenu,
   NavbarMenuItem,
   NavbarMenuToggle,
+  Tooltip,
 } from "@heroui/react";
-import {
-  Beaker,
-  Calendar,
-  Heart,
-  LayoutDashboard,
-  LogOut,
-  Package,
-  User as UserIcon,
-} from "lucide-react";
 
 import Link from "next/link";
+import { Query } from "appwrite";
 import React from "react";
-import { signOut } from "@/lib/appwrite/server";
+import UserDropdown from "@/components/ui/user-dropdown";
+import { teamIds } from "@/lib/appwrite/const";
+import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 export default function AppNavbar() {
   const { user } = useAuth();
+  const { teams } = useAppwrite();
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
+  const { data: isAdmin } = useQuery({
+    queryKey: queryKeys.userTeamMemberships(user?.$id ?? "", teamIds.admins),
+    queryFn: async () => {
+      if (!user?.$id) return false;
+      const { total } = await teams.listMemberships({
+        teamId: teamIds.admins,
+        queries: [Query.equal("userId", user.$id)],
+      });
+      return total > 0;
+    },
+    enabled: !!user?.$id,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  });
 
   const navLinks = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -93,61 +109,23 @@ export default function AppNavbar() {
       )}
 
       <NavbarContent as="div" justify="end">
-        {user ? (
-          <Dropdown placement="bottom-end">
-            <DropdownTrigger>
-              <Avatar
-                isBordered
-                as="button"
-                className="transition-transform"
-                color="primary"
-                name={user?.name}
-                size="sm"
-              />
-            </DropdownTrigger>
-            <DropdownMenu aria-label="Profile Actions" variant="flat">
-              <DropdownItem
-                key="profile_header"
-                className="h-14 gap-2"
-                textValue="Signed in as"
-              >
-                <p className="text-xs text-default-500">Signed in as</p>
-                <p className="font-semibold">{user?.email || "Guest"}</p>
-              </DropdownItem>
-
-              <DropdownItem
-                key="profile"
-                as={Link}
-                startContent={<UserIcon className="size-4" />}
-                href="/profile"
-              >
-                My Profile
-              </DropdownItem>
-
-              <DropdownItem
-                key="logout"
-                color="danger"
-                className="text-danger"
-                startContent={<LogOut className="size-4" />}
-                onPress={() => signOut()}
-              >
-                Log Out
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-        ) : (
-          <NavbarItem>
+        {isAdmin && (
+          <Tooltip content="Admin Panel" closeDelay={0}>
             <Button
               as={Link}
-              color="primary"
-              href="/login"
-              variant="flat"
-              size="sm"
+              href="/admin"
+              isIconOnly
+              variant="light"
+              radius="full"
+              color="secondary"
+              className="hidden sm:flex" // Hide on tiny screens if avatar is enough
             >
-              Login
+              <ShieldCheck className="size-5" />
             </Button>
-          </NavbarItem>
+          </Tooltip>
         )}
+
+        <UserDropdown />
       </NavbarContent>
 
       {/* Mobile Navigation Menu */}
@@ -168,6 +146,19 @@ export default function AppNavbar() {
             </Link>
           </NavbarMenuItem>
         ))}
+
+        {isAdmin && (
+          <NavbarMenuItem>
+            <Link
+              href="/admin"
+              className="flex w-full items-center gap-4 p-2 rounded-lg text-secondary"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <ShieldCheck className="size-5" />
+              <span className="text-lg font-medium">Admin Panel</span>
+            </Link>
+          </NavbarMenuItem>
+        )}
       </NavbarMenu>
     </Navbar>
   );

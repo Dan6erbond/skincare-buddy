@@ -22,13 +22,17 @@ import { ID, Permission, Role } from "appwrite";
 import { Plus, Trash2 } from "lucide-react";
 import { ProductFormValues, ProductSchema } from "@/lib/schema";
 import { Products, UnitsPeriodAfterOpeningUnit } from "@/lib/appwrite/types";
+import { databaseId, tableIds } from "@/lib/appwrite/const";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import BrandAutocomplete from "@/components/admin/brand/autocomplete";
 import { ModelCreate } from "@/lib/appwrite/utils";
+import ProductAutocomplete from "@/components/admin/product/autocomplete";
 import { categories } from "@/lib/product/const";
 import { getLocalTimeZone } from "@internationalized/date";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 export function CreateProductModal() {
@@ -36,6 +40,8 @@ export function CreateProductModal() {
   const { tables } = useAppwrite();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  const [selectedBrandId, setSelectedBrandId] = useState<string | undefined>();
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(ProductSchema),
@@ -71,8 +77,8 @@ export function CreateProductModal() {
       }));
 
       return await tables.createRow<ModelCreate<Products>>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.products,
         rowId: ID.unique(),
         data: {
           name: values.name,
@@ -126,23 +132,54 @@ export function CreateProductModal() {
               <ModalBody className="gap-6 pb-8">
                 {/* Section 1: Brand & Name */}
                 <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    {...form.register("brand")}
-                    label="Brand"
-                    placeholder="e.g. Drunk Elephant"
-                    variant="bordered"
-                    labelPlacement="outside"
-                    isInvalid={!!form.formState.errors.brand}
-                    errorMessage={form.formState.errors.brand?.message}
+                  <Controller
+                    name="brand"
+                    control={form.control}
+                    render={({
+                      field: { value, onChange, ...field },
+                      fieldState: { invalid, error },
+                    }) => (
+                      <BrandAutocomplete
+                        {...field}
+                        label="Brand"
+                        variant="bordered"
+                        labelPlacement="outside"
+                        isInvalid={invalid}
+                        errorMessage={error?.message}
+                        inputValue={value}
+                        onInputChange={onChange}
+                        onBrandSelect={(brand) => {
+                          onChange(brand.name); // Set the string name for the Product record
+                          setSelectedBrandId(brand.$id); // Set ID for filtering products
+                          form.setValue("name", ""); // Clear product name on brand change
+                        }}
+                        allowsCustomValue
+                      />
+                    )}
                   />
-                  <Input
-                    {...form.register("name")}
-                    label="Product Name"
-                    placeholder="e.g. C-Firma Fresh"
-                    variant="bordered"
-                    labelPlacement="outside"
-                    isInvalid={!!form.formState.errors.name}
-                    errorMessage={form.formState.errors.name?.message}
+                  <Controller
+                    name="name"
+                    control={form.control}
+                    render={({ field, fieldState: { invalid, error } }) => (
+                      <ProductAutocomplete
+                        {...field}
+                        brandId={selectedBrandId}
+                        label="Product Name"
+                        variant="bordered"
+                        labelPlacement="outside"
+                        isInvalid={invalid}
+                        errorMessage={error?.message}
+                        onProductSelect={(catalogProduct) => {
+                          field.onChange(catalogProduct.name);
+                          // Auto-fill available catalog data
+                          form.setValue("brand", catalogProduct.brand.name);
+                          if (catalogProduct.category) {
+                            form.setValue("category", catalogProduct.category);
+                          }
+                        }}
+                        allowsCustomValue
+                      />
+                    )}
                   />
                 </div>
 

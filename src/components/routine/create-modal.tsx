@@ -13,6 +13,7 @@ import {
 import { CreateRoutineSchema, CreateRoutineValues } from "@/lib/schema";
 import { ID, Permission, Role } from "appwrite";
 import { Plus, Sparkles } from "lucide-react";
+import { databaseId, tableIds } from "@/lib/appwrite/const";
 
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
@@ -36,8 +37,8 @@ export function CreateRoutineModal() {
     mutationFn: async (values: CreateRoutineValues) => {
       const routineId = ID.unique();
       await tables.createRow({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_ROUTINES_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.routines,
         rowId: routineId,
         data: {
           userId: user!.$id,

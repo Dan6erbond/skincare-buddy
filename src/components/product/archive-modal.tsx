@@ -14,6 +14,7 @@ import {
   addToast,
   useDisclosure,
 } from "@heroui/react";
+import { databaseId, tableIds } from "@/lib/appwrite/const";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Products } from "@/lib/appwrite/types";
@@ -31,8 +32,8 @@ export function ArchiveProductModal({ product }: Props) {
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
       return await tables.updateRow<Products>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
+        databaseId,
+        tableId: tableIds.products,
         rowId: product.$id,
         data: {
           archivedAt: new Date().toISOString(),

@@ -79,3 +79,18 @@ export type Profiles = Models.Row & {
     skinIssues: string[] | null;
     userId: string;
 }
+
+export type Brands = Models.Row & {
+    name: string;
+    website: string | null;
+    logoUrl: string | null;
+    products: CatalogProducts[];
+}
+
+export type CatalogProducts = Models.Row & {
+    name: string;
+    brand: Brands;
+    category: string | null;
+    imageUrl: string | null;
+    description: string | null;
+}

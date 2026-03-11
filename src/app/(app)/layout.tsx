@@ -6,7 +6,7 @@ import { APPWRITE_SESSION_KEY } from "@/lib/appwrite/const";
 import AppNavbar from "./navbar";
 import { AuthProvider } from "@/contexts/auth";
 import type { Metadata } from "next";
-import Providers from "./providers";
+import Providers from "../../components/providers";
 import { cn } from "@heroui/react";
 import { cookies } from "next/headers";
 import { getLoggedInUser } from "@/lib/appwrite/server";

@@ -25,6 +25,7 @@ import {
   InitialConfigType,
   LexicalComposer,
 } from "@lexical/react/LexicalComposer";
+import { databaseId, tableIds } from "@/lib/appwrite/const";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -84,9 +85,9 @@ import { MarkdownTogglePlugin } from "@/components/editor/plugins/actions/markdo
 import { MentionsPlugin } from "@/components/editor/plugins/mentions";
 import { NumberedListPickerPlugin } from "@/components/editor/plugins/picker/numbered-list";
 import { ParagraphPickerPlugin } from "@/components/editor/plugins/picker/paragraph";
-import { Products } from "@/lib/appwrite/types";
 import { QuotePickerPlugin } from "@/components/editor/plugins/picker/quote";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { Routines } from "@/lib/appwrite/types";
 import { SubSuperToolbarPlugin } from "@/components/editor/plugins/toolbar/sub-super";
 import { TABLE } from "@/components/editor/transformers/markdown-table";
 import { TabFocusPlugin } from "@/components/editor/plugins/tab-focus";
@@ -107,11 +108,11 @@ const editorConfig: InitialConfigType = {
   },
 };
 
-interface ProductDescriptionProps {
-  product: Products;
+interface RoutineDescriptionProps {
+  routine: Routines;
 }
 
-export function ProductDescription({ product }: ProductDescriptionProps) {
+export function RoutineDescription({ routine }: RoutineDescriptionProps) {
   const { tables } = useAppwrite();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
@@ -120,10 +121,10 @@ export function ProductDescription({ product }: ProductDescriptionProps) {
   const { mutate: saveDescription } = useMutation({
     mutationFn: async (state: SerializedEditorState) => {
       setSaving(true);
-      return await tables.updateRow<Products>({
-        databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-        tableId: process.env.NEXT_PUBLIC_PRODUCTS_TABLE_ID!,
-        rowId: product.$id,
+      return await tables.updateRow<Routines>({
+        databaseId,
+        tableId: tableIds.routines,
+        rowId: routine.$id,
         data: {
           description: JSON.stringify(state),
         },
@@ -131,7 +132,7 @@ export function ProductDescription({ product }: ProductDescriptionProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.product(product.$id),
+        queryKey: queryKeys.routine(routine.$id),
       });
       setSaving(false);
       setSaved(true);
@@ -152,8 +153,8 @@ export function ProductDescription({ product }: ProductDescriptionProps) {
         <LexicalComposer
           initialConfig={{
             ...editorConfig,
-            ...(product.description
-              ? { editorState: product.description }
+            ...(routine.description
+              ? { editorState: routine.description }
               : {}),
           }}
         >
