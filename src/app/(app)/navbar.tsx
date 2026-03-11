@@ -24,19 +24,21 @@ import {
 
 import Link from "next/link";
 import { Query } from "appwrite";
-import React from "react";
 import UserDropdown from "@/components/ui/user-dropdown";
 import { teamIds } from "@/lib/appwrite/const";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 
 export default function AppNavbar() {
+  const pathname = usePathname();
+
   const { user } = useAuth();
   const { teams } = useAppwrite();
-  const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const { data: isAdmin } = useQuery({
     queryKey: queryKeys.userTeamMemberships(user?.$id ?? "", teamIds.admins),

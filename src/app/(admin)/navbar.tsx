@@ -7,14 +7,20 @@ import {
   NavbarBrand,
   NavbarContent,
   NavbarItem,
+  NavbarMenu,
+  NavbarMenuItem,
+  NavbarMenuToggle,
 } from "@heroui/react";
 
 import Link from "next/link";
 import UserDropdown from "@/components/ui/user-dropdown";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 export default function AdminNavbar() {
   const pathname = usePathname();
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const adminLinks = [
     { label: "Catalog", href: "/admin/products", icon: Library },
@@ -25,17 +31,24 @@ export default function AdminNavbar() {
     <Navbar
       isBordered
       maxWidth="xl"
-      className="bg-content1/50 backdrop-blur-md border-b-secondary/20"
       position="sticky"
+      onMenuOpenChange={setIsMenuOpen}
+      isMenuOpen={isMenuOpen}
     >
-      <NavbarBrand className="gap-2" as={Link} href="/admin">
-        <ShieldCheck className="text-secondary size-5" />
-        <p className="font-bold text-secondary uppercase tracking-wider text-sm">
-          Admin <span className="text-foreground">Console</span>
-        </p>
-      </NavbarBrand>
+      <NavbarContent>
+        <NavbarMenuToggle
+          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          className="sm:hidden"
+        />
+        <NavbarBrand className="gap-2" as={Link} href="/admin">
+          <ShieldCheck className="text-secondary size-5" />
+          <p className="font-bold text-secondary uppercase tracking-wider text-sm">
+            Admin <span className="text-foreground">Console</span>
+          </p>
+        </NavbarBrand>
+      </NavbarContent>
 
-      <NavbarContent className="flex gap-4" justify="center">
+      <NavbarContent className="hidden sm:flex gap-6" justify="center">
         {adminLinks.map((link) => {
           const isActive = pathname === link.href;
           return (
@@ -71,6 +84,26 @@ export default function AdminNavbar() {
 
         <UserDropdown />
       </NavbarContent>
+
+      {/* Mobile Navigation Menu */}
+      <NavbarMenu className="mt-4 flex flex-col gap-2">
+        {adminLinks.map((link) => (
+          <NavbarMenuItem key={link.href}>
+            <Link
+              href={link.href}
+              className={`flex w-full items-center gap-4 p-2 rounded-lg ${
+                pathname === link.href
+                  ? "bg-primary/10 text-primary"
+                  : "text-default-600"
+              }`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <link.icon className="size-5" />
+              <span className="text-lg font-medium">{link.label}</span>
+            </Link>
+          </NavbarMenuItem>
+        ))}
+      </NavbarMenu>
     </Navbar>
   );
 }
