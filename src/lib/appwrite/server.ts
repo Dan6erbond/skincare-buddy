@@ -6,19 +6,29 @@ import { cookies, headers } from "next/headers";
 import { APPWRITE_SESSION_KEY } from "./const";
 import { redirect } from "next/navigation";
 
-export async function createSessionClient() {
+export function createClient(session?: string | null) {
   const client = new Client()
     .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
     .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
 
+  if (session) {
+    client.setSession(session);
+  }
+
+  return client;
+}
+
+export async function createSessionClient() {
   const session = (await cookies()).get(APPWRITE_SESSION_KEY);
   if (!session || !session.value) {
     throw new Error("No session");
   }
 
-  client.setSession(session.value);
+  const client = createClient(session.value);
 
   return {
+    client,
+    session: session.value,
     get account() {
       return new Account(client);
     },
@@ -26,10 +36,7 @@ export async function createSessionClient() {
 }
 
 export async function createAdminClient() {
-  const client = new Client()
-    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
-    .setKey(process.env.NEXT_APPWRITE_KEY!);
+  const client = createClient().setKey(process.env.NEXT_APPWRITE_KEY!);
 
   return {
     get account() {

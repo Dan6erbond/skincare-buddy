@@ -2,14 +2,13 @@ import "./globals.css";
 
 import { Geist, Lexend_Deca } from "next/font/google";
 
-import { APPWRITE_SESSION_KEY } from "@/lib/appwrite/const";
 import AppNavbar from "./navbar";
 import { AuthProvider } from "@/contexts/auth";
 import type { Metadata } from "next";
-import Providers from "../../components/providers";
+import { Models } from "appwrite";
+import Providers from "@/components/providers";
 import { cn } from "@heroui/react";
-import { cookies } from "next/headers";
-import { getLoggedInUser } from "@/lib/appwrite/server";
+import { createSessionClient } from "@/lib/appwrite/server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,9 +37,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getLoggedInUser();
-  const sessionCookie = (await cookies()).get(APPWRITE_SESSION_KEY);
-  const session = sessionCookie?.value ?? null;
+  let session: string | null = null;
+  let user: Models.User | null = null;
+
+  try {
+    const { account, session: s } = await createSessionClient();
+    session = s;
+    user = await account.get();
+  } catch (error) {
+    console.error(error);
+  }
 
   return (
     <html

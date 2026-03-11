@@ -3,6 +3,7 @@
 import { Account, Client, Databases, Storage, TablesDB, Teams } from "appwrite";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 
+import { createClient } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/auth";
 
 interface AppwriteContextType {
@@ -21,17 +22,7 @@ const AppwriteContext = createContext<AppwriteContextType | undefined>(
 export function AppwriteProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
 
-  const client = useMemo(() => {
-    const c = new Client()
-      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
-
-    if (session) {
-      c.setSession(session);
-    }
-
-    return c;
-  }, [session]);
+  const client = useMemo(() => createClient(session), [session]);
 
   const services = useMemo(
     () => ({

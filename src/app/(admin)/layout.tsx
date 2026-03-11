@@ -1,7 +1,6 @@
 import "./globals.css";
 
-import { APPWRITE_SESSION_KEY, teamIds } from "@/lib/appwrite/const";
-import { Account, Client, Models, Query, Teams } from "node-appwrite";
+import { Client, Models, Query, Teams } from "node-appwrite";
 import { Geist, Lexend_Deca } from "next/font/google";
 
 import AdminNavbar from "./navbar";
@@ -9,9 +8,9 @@ import { AuthProvider } from "@/contexts/auth";
 import { Metadata } from "next";
 import Providers from "@/components/providers";
 import { cn } from "@heroui/react";
-import { cookies } from "next/headers";
 import { createSessionClient } from "@/lib/appwrite/server";
 import { redirect } from "next/navigation";
+import { teamIds } from "@/lib/appwrite/const";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,26 +39,19 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  let c: Client | undefined;
+  let session: string | undefined | null;
   let user: Models.User | undefined;
-  let account: Account | undefined;
+
   try {
-    account = await createSessionClient().then(({ account }) => account);
-    user = await account!.get();
+    const { account, client, session: s } = await createSessionClient();
+    c = client;
+    session = s;
+    user = await account.get();
   } catch (error) {
     console.error(error);
     // Server-side security gate
     redirect("/login");
-  }
-
-  const sessionCookie = (await cookies()).get(APPWRITE_SESSION_KEY);
-  const session = sessionCookie?.value ?? null;
-
-  const c = new Client()
-    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
-
-  if (session) {
-    c.setSession(session);
   }
 
   const teams = new Teams(c);
