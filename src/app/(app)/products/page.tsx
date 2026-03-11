@@ -116,8 +116,8 @@ export default function Page() {
             description={product.brand}
             avatarProps={{
               src:
-                (product.catalogProduct.imageUrl ??
-                  product.catalogBrand.logoUrl) ||
+                (product.catalogProduct?.imageUrl ??
+                  product.catalogBrand?.logoUrl) ||
                 undefined,
               radius: "md",
               color: "primary",
