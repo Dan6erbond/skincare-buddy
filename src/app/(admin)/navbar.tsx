@@ -12,6 +12,7 @@ import {
   NavbarMenuToggle,
 } from "@heroui/react";
 
+import Image from "next/image";
 import Link from "next/link";
 import UserDropdown from "@/components/ui/user-dropdown";
 import { usePathname } from "next/navigation";
@@ -41,7 +42,7 @@ export default function AdminNavbar() {
           className="sm:hidden"
         />
         <NavbarBrand className="gap-2" as={Link} href="/admin">
-          <ShieldCheck className="text-secondary size-5" />
+          <Image src="/logo.png" height={50} width={50} alt="Skincare Buddy" />
           <p className="hidden sm:block font-bold text-secondary uppercase tracking-wider text-sm">
             Admin <span className="text-foreground">Console</span>
           </p>

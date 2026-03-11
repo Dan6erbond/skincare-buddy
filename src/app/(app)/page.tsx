@@ -4,8 +4,8 @@ import { Button, Card, CardBody, Input, Tab, Tabs } from "@heroui/react";
 import { signInWithEmail, signUpWithEmail } from "@/lib/appwrite/server";
 import { useState, useTransition } from "react";
 
+import Image from "next/image";
 import { Key } from "@react-types/shared";
-import { Sparkles } from "lucide-react";
 
 export default function AuthForm() {
   const [selected, setSelected] = useState<Key>("login");
@@ -13,7 +13,7 @@ export default function AuthForm() {
 
   const handleAction = async (
     formData: FormData,
-    action: (data: FormData) => Promise<void>
+    action: (data: FormData) => Promise<void>,
   ) => {
     startTransition(async () => {
       await action(formData);
@@ -24,8 +24,8 @@ export default function AuthForm() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-primary-50 to-secondary-50 p-4">
       <div className="mb-10 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-background shadow-sm mb-4">
-          <Sparkles className="text-primary size-8" />
+        <div className="inline-flex items-center justify-center rounded-full bg-background shadow-sm mb-4">
+          <Image src="/logo.png" height={75} width={75} alt="Skincare Buddy" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Skincare Buddy

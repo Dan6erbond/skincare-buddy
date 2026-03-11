@@ -22,6 +22,7 @@ import {
   Tooltip,
 } from "@heroui/react";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Query } from "appwrite";
 import UserDropdown from "@/components/ui/user-dropdown";
@@ -80,9 +81,7 @@ export default function AppNavbar() {
           href={user ? "/dashboard" : "/"}
           className="gap-2 group"
         >
-          <div className="bg-primary/10 p-2 rounded-lg group-hover:bg-primary/20 transition-colors">
-            <Beaker className="text-primary" size={20} />
-          </div>
+          <Image src="/logo.png" height={50} width={50} alt="Skincare Buddy" />
           <p className="font-black text-inherit uppercase tracking-tighter text-xl">
             Skincare<span className="text-primary">Buddy</span>
           </p>

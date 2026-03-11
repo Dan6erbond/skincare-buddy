@@ -1,5 +1,6 @@
-import { getLoggedInUser } from "@/lib/appwrite/server";
 import { NextRequest, NextResponse } from "next/server";
+
+import { getLoggedInUser } from "@/lib/appwrite/server";
 
 export async function proxy(req: NextRequest) {
   if (req.nextUrl.pathname === "/") {
@@ -17,5 +18,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|.*\\.).*)"],
 };
