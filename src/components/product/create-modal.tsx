@@ -191,6 +191,10 @@ export function CreateProductModal() {
                           // Auto-fill available catalog data
                           form.setValue("brand", catalogProduct.brand.name);
                           form.setValue("catalogProduct", catalogProduct.$id);
+                          form.setValue(
+                            "catalogBrand",
+                            catalogProduct.brand.$id,
+                          );
                           if (catalogProduct.category) {
                             form.setValue("category", catalogProduct.category);
                           }
