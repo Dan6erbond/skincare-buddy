@@ -50,7 +50,9 @@ export function CatalogProductModal({
     resolver: zodResolver(CatalogProductSchema),
     defaultValues: {
       name: product?.name ?? "",
-      brandId: product?.brand?.$id ?? "",
+      brandId:
+        product?.brand &&
+        (typeof product.brand === "string" ? product.brand : product.brand.$id),
       category: product?.category ?? "",
       description: product?.description ?? "",
       imageUrl: product?.imageUrl ?? "",
