@@ -1,6 +1,8 @@
 {
   "name": "Skincare Buddy",
   "short_name": "Skincare Buddy",
+  "description": "Track your skincare routine, analyze product ingredients, and get AI-powered recommendations based on your skin's unique needs.",
+  "start_url": "/",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
