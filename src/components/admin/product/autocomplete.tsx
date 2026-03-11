@@ -52,6 +52,10 @@ export default function ProductAutocomplete({
         queries.push(Query.equal("brand", brandId));
       }
 
+      if (search) {
+        queries.push(Query.search("name", search));
+      }
+
       if (pageParam) {
         queries.push(Query.cursorAfter(pageParam));
       }
