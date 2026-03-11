@@ -39,6 +39,7 @@ export default function CatalogPage() {
           databaseId,
           tableId: tableIds.catalogProducts,
           queries: [
+            Query.select(["*", "brand.*"]),
             ...(search ? [Query.search("name", search)] : []),
             Query.orderAsc("name"),
             Query.limit(perPage),
@@ -124,7 +125,9 @@ export default function CatalogPage() {
                     name={product.name}
                     description={product.brand?.name}
                     avatarProps={{
-                      src: product.imageUrl || undefined,
+                      src:
+                        (product.imageUrl ?? product.brand?.logoUrl) ||
+                        undefined,
                       name: product.name[0],
                       radius: "sm",
                     }}
