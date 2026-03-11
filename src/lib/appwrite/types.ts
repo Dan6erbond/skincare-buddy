@@ -33,6 +33,8 @@ export type Products = Models.Row & {
     steps: Steps[];
     archivedAt: string | null;
     wishlistProducts: WishlistProducts[];
+    catalogBrand: Brands;
+    catalogProduct: CatalogProducts;
 }
 
 export type Units = Models.Row & {
@@ -85,6 +87,7 @@ export type Brands = Models.Row & {
     website: string | null;
     logoUrl: string | null;
     products: CatalogProducts[];
+    userProducts: Products[];
 }
 
 export type CatalogProducts = Models.Row & {
@@ -93,4 +96,5 @@ export type CatalogProducts = Models.Row & {
     category: string | null;
     imageUrl: string | null;
     description: string | null;
+    userProducts: Products[];
 }

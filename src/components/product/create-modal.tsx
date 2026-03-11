@@ -56,6 +56,8 @@ export function CreateProductModal() {
           periodAfterOpeningUnit: UnitsPeriodAfterOpeningUnit.MONTHS,
         },
       ],
+      catalogBrand: null,
+      catalogProduct: null,
     },
   });
 
@@ -87,6 +89,8 @@ export function CreateProductModal() {
           price: values.price,
           userId: user!.$id,
           units: unitsData,
+          catalogBrand: values.catalogBrand,
+          catalogProduct: values.catalogProduct,
         },
         permissions: [
           Permission.read(Role.user(user!.$id)),
@@ -147,11 +151,16 @@ export function CreateProductModal() {
                         isInvalid={invalid}
                         errorMessage={error?.message}
                         inputValue={value}
-                        onInputChange={onChange}
+                        onInputChange={(val) => {
+                          onChange(val);
+                          form.setValue("catalogBrand", null);
+                        }}
                         onBrandSelect={(brand) => {
                           onChange(brand.name); // Set the string name for the Product record
                           setSelectedBrandId(brand.$id); // Set ID for filtering products
                           form.setValue("name", ""); // Clear product name on brand change
+                          form.setValue("catalogBrand", brand.$id); // Clear product name on brand change
+                          form.setValue("catalogProduct", null);
                         }}
                         allowsCustomValue
                       />
@@ -160,7 +169,10 @@ export function CreateProductModal() {
                   <Controller
                     name="name"
                     control={form.control}
-                    render={({ field, fieldState: { invalid, error } }) => (
+                    render={({
+                      field: { value, onChange, ...field },
+                      fieldState: { invalid, error },
+                    }) => (
                       <ProductAutocomplete
                         {...field}
                         brandId={selectedBrandId}
@@ -169,10 +181,16 @@ export function CreateProductModal() {
                         labelPlacement="outside"
                         isInvalid={invalid}
                         errorMessage={error?.message}
+                        inputValue={value}
+                        onInputChange={(val) => {
+                          onChange(val);
+                          form.setValue("catalogProduct", null);
+                        }}
                         onProductSelect={(catalogProduct) => {
-                          field.onChange(catalogProduct.name);
+                          onChange(catalogProduct.name);
                           // Auto-fill available catalog data
                           form.setValue("brand", catalogProduct.brand.name);
+                          form.setValue("catalogProduct", catalogProduct.$id);
                           if (catalogProduct.category) {
                             form.setValue("category", catalogProduct.category);
                           }

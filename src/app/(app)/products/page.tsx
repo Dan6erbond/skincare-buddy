@@ -115,6 +115,10 @@ export default function Page() {
             name={product.name}
             description={product.brand}
             avatarProps={{
+              src:
+                (product.catalogProduct.imageUrl ??
+                  product.catalogBrand.logoUrl) ||
+                undefined,
               radius: "md",
               color: "primary",
               size: "sm",
@@ -274,7 +278,12 @@ export default function Page() {
                   ]),
                 ]
               : []),
-            Query.select(["*", "units.*"]),
+            Query.select([
+              "*",
+              "units.*",
+              "catalogProduct.*",
+              "catalogBrand.*",
+            ]),
             ...orderQueries,
             Query.orderAsc("$updatedAt"),
             Query.orderAsc("$createdAt"),

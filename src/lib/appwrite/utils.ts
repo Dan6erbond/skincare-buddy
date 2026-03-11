@@ -48,17 +48,17 @@ export type ModelCreate<T> = Pick<T, Extract<keyof T, keyof Models.Row>> & {
     | (T[K] extends Models.Row ? K : never)
     | (T[K] extends Models.Row[] ? K : never)]?: T[K] extends (infer U)[]
     ? U extends Models.Row
-      ? ModelCreateRecursive<U>[] | null | undefined
+      ? ModelCreateRecursive<U>[] | null | undefined | string
       : T[K]
     : T[K] extends Models.Row
-    ? ModelCreateRecursive<T[K]> | null | undefined
-    : T[K] | undefined;
+      ? ModelCreateRecursive<T[K] | string> | null | undefined
+      : T[K] | undefined;
 } & {
   [K in keyof Omit<T, keyof Models.Row> as null extends T[K]
     ? never
     : T[K] extends Models.Row
-    ? never
-    : T[K] extends Models.Row[]
-    ? never
-    : K]: T[K];
+      ? never
+      : T[K] extends Models.Row[]
+        ? never
+        : K]: T[K];
 };

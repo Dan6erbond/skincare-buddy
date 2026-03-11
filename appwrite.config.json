@@ -171,6 +171,30 @@
                     "twoWayKey": "product",
                     "onDelete": "cascade",
                     "side": "child"
+                },
+                {
+                    "key": "catalogBrand",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "brands",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "userProducts",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "catalogProduct",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "catalog_products",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "userProducts",
+                    "onDelete": "setNull",
+                    "side": "parent"
                 }
             ],
             "indexes": [
@@ -603,9 +627,44 @@
                     "twoWayKey": "brand",
                     "onDelete": "cascade",
                     "side": "child"
+                },
+                {
+                    "key": "userProducts",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "products",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "catalogBrand",
+                    "onDelete": "setNull",
+                    "side": "child"
                 }
             ],
-            "indexes": []
+            "indexes": [
+                {
+                    "key": "name_fts_index",
+                    "type": "fulltext",
+                    "status": "available",
+                    "columns": [
+                        "name"
+                    ],
+                    "orders": [
+                        "asc"
+                    ]
+                },
+                {
+                    "key": "website_fts_index",
+                    "type": "fulltext",
+                    "status": "available",
+                    "columns": [
+                        "website"
+                    ],
+                    "orders": [
+                        "asc"
+                    ]
+                }
+            ]
         },
         {
             "$id": "catalog_products",
@@ -665,9 +724,33 @@
                     "array": false,
                     "default": null,
                     "encrypt": false
+                },
+                {
+                    "key": "userProducts",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "products",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "catalogProduct",
+                    "onDelete": "setNull",
+                    "side": "child"
                 }
             ],
-            "indexes": []
+            "indexes": [
+                {
+                    "key": "name_fts_index",
+                    "type": "fulltext",
+                    "status": "available",
+                    "columns": [
+                        "name"
+                    ],
+                    "orders": [
+                        "asc"
+                    ]
+                }
+            ]
         }
     ]
 }
