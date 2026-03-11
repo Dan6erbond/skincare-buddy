@@ -1,12 +1,14 @@
 export function products(): ["products"];
 
-export function products(props: {
-  sortDirections?: Record<string, "asc" | "desc">;
-  page?: number;
-  perPage?: number;
-  search: string;
-  showArchived?: boolean;
-}): ["products", typeof props];
+export function products<
+  T extends {
+    sortDirections?: Record<string, "asc" | "desc">;
+    page?: number;
+    perPage?: number;
+    search: string;
+    showArchived?: boolean;
+  },
+>(props: T): ["products", T];
 
 export function products(props?: object) {
   return props ? ["products", props] : ["products"];
