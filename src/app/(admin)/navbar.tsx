@@ -42,7 +42,7 @@ export default function AdminNavbar() {
         />
         <NavbarBrand className="gap-2" as={Link} href="/admin">
           <ShieldCheck className="text-secondary size-5" />
-          <p className="font-bold text-secondary uppercase tracking-wider text-sm">
+          <p className="hidden sm:block font-bold text-secondary uppercase tracking-wider text-sm">
             Admin <span className="text-foreground">Console</span>
           </p>
         </NavbarBrand>
