@@ -6,7 +6,7 @@ import { cookies, headers } from "next/headers";
 import { APPWRITE_SESSION_KEY } from "./const";
 import { redirect } from "next/navigation";
 
-export function createClient(session?: string | null) {
+export async function createClient(session?: string | null) {
   const client = new Client()
     .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
     .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
@@ -24,7 +24,7 @@ export async function createSessionClient() {
     throw new Error("No session");
   }
 
-  const client = createClient(session.value);
+  const client = await createClient(session.value);
 
   return {
     client,
@@ -36,7 +36,9 @@ export async function createSessionClient() {
 }
 
 export async function createAdminClient() {
-  const client = createClient().setKey(process.env.NEXT_APPWRITE_KEY!);
+  const client = await createClient().then((c) =>
+    c.setKey(process.env.NEXT_APPWRITE_KEY!),
+  );
 
   return {
     get account() {
