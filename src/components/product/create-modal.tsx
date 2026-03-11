@@ -6,7 +6,6 @@ import {
   Button,
   DatePicker,
   Divider,
-  Input,
   Modal,
   ModalBody,
   ModalContent,
@@ -17,7 +16,7 @@ import {
   SelectItem,
   useDisclosure,
 } from "@heroui/react";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { ID, Permission, Role } from "appwrite";
 import { Plus, Trash2 } from "lucide-react";
 import { ProductFormValues, ProductSchema } from "@/lib/schema";
@@ -32,7 +31,6 @@ import { categories } from "@/lib/product/const";
 import { getLocalTimeZone } from "@internationalized/date";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
-import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 export function CreateProductModal() {
@@ -40,8 +38,6 @@ export function CreateProductModal() {
   const { tables } = useAppwrite();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  const [selectedBrandId, setSelectedBrandId] = useState<string | undefined>();
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(ProductSchema),
@@ -59,6 +55,11 @@ export function CreateProductModal() {
       catalogBrand: null,
       catalogProduct: null,
     },
+  });
+
+  const [catalogBrand, category] = useWatch({
+    control: form.control,
+    name: ["catalogBrand", "category"],
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -157,7 +158,6 @@ export function CreateProductModal() {
                         }}
                         onBrandSelect={(brand) => {
                           onChange(brand.name); // Set the string name for the Product record
-                          setSelectedBrandId(brand.$id); // Set ID for filtering products
                           form.setValue("name", ""); // Clear product name on brand change
                           form.setValue("catalogBrand", brand.$id); // Clear product name on brand change
                           form.setValue("catalogProduct", null);
@@ -167,6 +167,33 @@ export function CreateProductModal() {
                     )}
                   />
                   <Controller
+                    name="category"
+                    control={form.control}
+                    render={({
+                      field: { value, onChange, ...field },
+                      fieldState: { invalid, error },
+                    }) => (
+                      <Select
+                        {...field}
+                        label="Category"
+                        variant="bordered"
+                        labelPlacement="outside"
+                        selectedKeys={[value]}
+                        onSelectionChange={(k) => onChange(Array.from(k)[0])}
+                        isInvalid={invalid}
+                        errorMessage={error?.message}
+                      >
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.key}>{cat.label}</SelectItem>
+                        ))}
+                      </Select>
+                    )}
+                  />
+                </div>
+
+                {/* Section 2: Category & Price */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Controller
                     name="name"
                     control={form.control}
                     render={({
@@ -175,7 +202,8 @@ export function CreateProductModal() {
                     }) => (
                       <ProductAutocomplete
                         {...field}
-                        brandId={selectedBrandId}
+                        brandId={catalogBrand ?? undefined}
+                        category={category ?? undefined}
                         label="Product Name"
                         variant="bordered"
                         labelPlacement="outside"
@@ -201,33 +229,6 @@ export function CreateProductModal() {
                         }}
                         allowsCustomValue
                       />
-                    )}
-                  />
-                </div>
-
-                {/* Section 2: Category & Price */}
-                <div className="grid grid-cols-2 gap-4">
-                  <Controller
-                    name="category"
-                    control={form.control}
-                    render={({
-                      field: { value, onChange, ...field },
-                      fieldState: { invalid, error },
-                    }) => (
-                      <Select
-                        {...field}
-                        label="Category"
-                        variant="bordered"
-                        labelPlacement="outside"
-                        selectedKeys={[value]}
-                        onSelectionChange={(k) => onChange(Array.from(k)[0])}
-                        isInvalid={invalid}
-                        errorMessage={error?.message}
-                      >
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.key}>{cat.label}</SelectItem>
-                        ))}
-                      </Select>
                     )}
                   />
                   <Controller

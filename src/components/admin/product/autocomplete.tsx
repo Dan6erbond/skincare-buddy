@@ -23,11 +23,13 @@ interface ProductAutocompleteProps extends Omit<
   "children" | "onSelectionChange"
 > {
   brandId?: string;
+  category?: string;
   onProductSelect?: (product: CatalogProducts) => void;
 }
 
 export default function ProductAutocomplete({
   brandId,
+  category,
   onProductSelect,
   ...props
 }: ProductAutocompleteProps) {
@@ -39,8 +41,11 @@ export default function ProductAutocomplete({
 
   const { data, fetchNextPage, hasNextPage, isFetching } = useInfiniteQuery({
     // Include brandId in the key so the query resets when the brand changes
-    queryKey: queryKeys.adminCatalog({ brandId, search: filterText }),
-    queryFn: async ({ pageParam, queryKey: [_, __, { brandId, search }] }) => {
+    queryKey: queryKeys.adminCatalog({ brandId, category, search: filterText }),
+    queryFn: async ({
+      pageParam,
+      queryKey: [_, __, { brandId, category, search }],
+    }) => {
       const queries = [
         Query.orderAsc("name"),
         Query.limit(limit),
@@ -50,6 +55,10 @@ export default function ProductAutocomplete({
       // Filter by brand if provided
       if (brandId) {
         queries.push(Query.equal("brand", brandId));
+      }
+
+      if (category) {
+        queries.push(Query.equal("category", category));
       }
 
       if (search) {
