@@ -53,7 +53,7 @@ import {
 
 import { AIExportButton } from "@/components/ui/ai-export-button";
 import { ModelCreate } from "@/lib/appwrite/utils";
-import ProductSelect from "@/components/ui/product-select";
+import ProductSelect from "@/components/product/select";
 import { RoutineDescription } from "./description";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
