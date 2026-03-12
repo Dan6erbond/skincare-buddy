@@ -3,14 +3,6 @@
 import * as queryKeys from "@/lib/query/keys";
 
 import {
-  Beaker,
-  Calendar,
-  Heart,
-  LayoutDashboard,
-  Package,
-  ShieldCheck,
-} from "lucide-react";
-import {
   Button,
   Navbar,
   NavbarBrand,
@@ -21,6 +13,13 @@ import {
   NavbarMenuToggle,
   Tooltip,
 } from "@heroui/react";
+import {
+  Calendar,
+  Heart,
+  LayoutDashboard,
+  Package,
+  ShieldCheck,
+} from "lucide-react";
 
 import Image from "next/image";
 import Link from "next/link";
