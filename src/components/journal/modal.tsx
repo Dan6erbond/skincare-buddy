@@ -65,7 +65,7 @@ export function JournalEntryModal({ entry }: JournalEntryModalProps) {
           fileId: ID.unique(),
           file: image,
           permissions: [
-            Permission.read(Role.any()),
+            Permission.read(Role.user(user.$id)),
             Permission.update(Role.user(user.$id)),
             Permission.delete(Role.user(user.$id)),
           ],

@@ -33,12 +33,7 @@ export function ImageUpload({
     }
 
     if (typeof value === "string") {
-      // Generate the preview URL from Appwrite
-      const url = storage.getFileView({
-        bucketId,
-        fileId: value,
-      });
-      setPreview(url);
+      setPreview(`/api/files/${value}`);
     }
   }, [value, storage, setPreview]);
 

@@ -196,10 +196,7 @@ export default function JournalPage() {
             <CardBody className="p-0">
               {entry.imageId ? (
                 <Image
-                  src={storage.getFileView({
-                    bucketId,
-                    fileId: entry.imageId,
-                  })}
+                  src={`/api/files/${entry.imageId}`}
                   alt="Progress"
                   className="w-full aspect-4/3 object-cover rounded-none"
                 />
