@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button, Card, CardBody } from "@heroui/react";
 
+import { InstallModal } from "@/components/ui/install-modal";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth";
 
@@ -133,6 +134,8 @@ export default function DashboardPage() {
           </CardBody>
         </Card>
       </div>
+
+      <InstallModal />
     </div>
   );
 }
