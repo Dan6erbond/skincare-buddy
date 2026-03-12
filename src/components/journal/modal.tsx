@@ -2,8 +2,10 @@
 
 import * as queryKeys from "@/lib/query/keys";
 
+import { BookPlus, Pencil } from "lucide-react";
 import {
   Button,
+  ButtonProps,
   Modal,
   ModalBody,
   ModalContent,
@@ -30,11 +32,11 @@ import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-interface JournalEntryModalProps {
+interface JournalEntryModalProps extends ButtonProps {
   entry?: JournalEntries;
 }
 
-export function JournalEntryModal({ entry }: JournalEntryModalProps) {
+export function JournalEntryModal({ entry, ...props }: JournalEntryModalProps) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { user } = useAuth();
   const { tables, storage } = useAppwrite();
@@ -117,6 +119,15 @@ export function JournalEntryModal({ entry }: JournalEntryModalProps) {
         onPress={onOpen}
         color="primary"
         variant={entry ? "flat" : "solid"}
+        startContent={
+          entry ? (
+            <Pencil className="group-[.text-tiny]:size-4 size-5" />
+          ) : (
+            <BookPlus className="group-[.text-tiny]:size-4 size-5" />
+          )
+        }
+        className="group"
+        {...props}
       >
         {entry ? "Edit Entry" : "New Journal Entry"}
       </Button>
