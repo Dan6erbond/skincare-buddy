@@ -60,3 +60,19 @@ export function adminCatalog(filters?: object) {
   const base = ["admin", "catalog"] as const;
   return filters ? [...base, filters] : base;
 }
+
+export function journal(): ["journal"];
+
+export function journal(props: {
+  sortDirections: Record<string, "asc" | "desc">;
+}): ["journal", typeof props];
+
+export function journal(props?: {
+  sortDirections: Record<string, "asc" | "desc">;
+}) {
+  return props ? ["journal", props] : ["journal"];
+}
+
+export const journalEntry = (id: string) => ["journal", id] as const;
+
+export const fileUrl = (fileId: string) => ["files", fileId] as const;

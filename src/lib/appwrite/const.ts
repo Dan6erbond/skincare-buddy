@@ -12,8 +12,11 @@ export const tableIds = {
   profiles: "profiles",
   brands: "brands",
   catalogProducts: "catalog_products",
+  journalEntries: "journal_entries",
 } as const;
 
 export const teamIds = {
   admins: process.env.NEXT_PUBLIC_ADMIN_TEAM_ID!,
 };
+
+export const bucketId = process.env.NEXT_PUBLIC_BUCKET_ID!;

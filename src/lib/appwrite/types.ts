@@ -98,3 +98,10 @@ export type CatalogProducts = Models.Row & {
     description: string | null;
     userProducts: Products[];
 }
+
+export type JournalEntries = Models.Row & {
+    occurredAt: string;
+    description: string | null;
+    imageId: string | null;
+    userId: string;
+}

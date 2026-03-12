@@ -582,9 +582,9 @@
             "$id": "brands",
             "$permissions": [
                 "create(\"team:69b1560c0009057775d8\")",
-                "read(\"team:69b1560c0009057775d8\")",
                 "update(\"team:69b1560c0009057775d8\")",
-                "delete(\"team:69b1560c0009057775d8\")"
+                "delete(\"team:69b1560c0009057775d8\")",
+                "read(\"any\")"
             ],
             "databaseId": "skincare-buddy",
             "name": "brands",
@@ -670,9 +670,9 @@
             "$id": "catalog_products",
             "$permissions": [
                 "create(\"team:69b1560c0009057775d8\")",
-                "read(\"team:69b1560c0009057775d8\")",
                 "update(\"team:69b1560c0009057775d8\")",
-                "delete(\"team:69b1560c0009057775d8\")"
+                "delete(\"team:69b1560c0009057775d8\")",
+                "read(\"any\")"
             ],
             "databaseId": "skincare-buddy",
             "name": "catalog_products",
@@ -751,6 +751,53 @@
                     ]
                 }
             ]
+        },
+        {
+            "$id": "journal_entry",
+            "$permissions": [
+                "create(\"users\")"
+            ],
+            "databaseId": "skincare-buddy",
+            "name": "journal_entries",
+            "enabled": true,
+            "rowSecurity": true,
+            "columns": [
+                {
+                    "key": "occurredAt",
+                    "type": "datetime",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "description",
+                    "type": "longtext",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "imageId",
+                    "type": "varchar",
+                    "required": false,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "userId",
+                    "type": "varchar",
+                    "required": true,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
         }
     ]
 }

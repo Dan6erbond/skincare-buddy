@@ -8,6 +8,7 @@ import {
 } from "lexical";
 
 import React from "react";
+import { getStyleObjectFromCSS } from "@lexical/selection";
 
 // Lexical Text Format Bitmasks
 const IS_BOLD = 1;
@@ -66,7 +67,7 @@ function renderNodes(nodes: SerializedLexicalNode[]): React.ReactNode {
         );
 
       return (
-        <span key={index} style={{ color: style }}>
+        <span key={index} style={getStyleObjectFromCSS(style)}>
           {content}
         </span>
       );

@@ -1,3 +1,4 @@
+import { Button, Divider } from "@heroui/react";
 import {
   CHECK_LIST,
   ELEMENT_TRANSFORMERS,
@@ -5,7 +6,15 @@ import {
   TEXT_FORMAT_TRANSFORMERS,
   TEXT_MATCH_TRANSFORMERS,
 } from "@lexical/markdown";
+import {
+  COMMAND_PRIORITY_CRITICAL,
+  KEY_DOWN_COMMAND,
+  SELECTION_CHANGE_COMMAND,
+  SerializedEditorState,
+} from "lexical";
+import { CheckIcon, SaveIcon } from "lucide-react";
 import { DynamicTablePickerPlugin, TablePickerPlugin } from "./picker/table";
+import { useEffect, useState } from "react";
 
 import { ActionsPlugin } from "./actions";
 import { AlignmentPickerPlugin } from "./picker/alignment";
@@ -15,7 +24,6 @@ import { AutocompletePlugin } from "./autocomplete";
 import { BlockFormatDropDown } from "./toolbar/block-format";
 import { BlockInsertPlugin } from "./toolbar/block-insert";
 import { BulletedListPickerPlugin } from "./picker/bulleted-list";
-import { CharacterLimitPlugin } from "./actions/character-limit";
 import { CheckListPickerPlugin } from "./picker/check-list";
 import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
 import { ClearEditorActionPlugin } from "./actions/clear-editor";
@@ -30,19 +38,15 @@ import { ColumnsLayoutPickerPlugin } from "./picker/columns-layout";
 import { ComponentPickerMenuPlugin } from "./component-picker-menu";
 import { ContentEditable } from "../ui/content-editable";
 import { ContextMenuPlugin } from "./context-menu";
-import { CountCharacterPlugin } from "./actions/count-character";
-import { Divider } from "@heroui/react";
 import { DividerPickerPlugin } from "./picker/divider";
 import { DragDropPastePlugin } from "./drag-drop-paste";
 import { DraggableBlockPlugin } from "./draggable-block";
 import { EMOJI } from "../transformers/markdown-emoji";
-import { EditModeTogglePlugin } from "./actions/edit-mode-toggle";
 import { ElementFormatToolbarPlugin } from "./toolbar/element-format";
 import { EmojiPickerPlugin } from "./picker/emoji";
 import { EmojisPlugin } from "./emojis";
 import { FloatingLinkEditorPlugin } from "./floating-link-editor";
 import { FloatingTextFormatToolbarPlugin } from "./floating-text-format";
-import { FontBackgroundToolbarPlugin } from "./toolbar/font-background";
 import { FontColorToolbarPlugin } from "./toolbar/font-color";
 import { FontFamilyToolbarPlugin } from "./toolbar/font-family";
 import { FontFormatToolbarPlugin } from "./toolbar/font-format";
@@ -56,7 +60,6 @@ import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin
 import { IMAGE } from "../transformers/markdown-image";
 import { ImagePickerPlugin } from "./picker/image";
 import { ImagesPlugin } from "./images";
-import { ImportExportPlugin } from "./actions/import-export";
 import { KeywordsPlugin } from "./keywords";
 import { LayoutPlugin } from "./layout";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
@@ -66,31 +69,72 @@ import { ListMaxIndentLevelPlugin } from "./list-max-indent-level";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { MarkdownTogglePlugin } from "./actions/markdown-toggle";
-import { MaxLengthPlugin } from "./actions/max-length";
 import { MentionsPlugin } from "./mentions";
 import { NumberedListPickerPlugin } from "@/components/editor/plugins/picker/numbered-list";
 import { ParagraphPickerPlugin } from "./picker/paragraph";
 import { QuotePickerPlugin } from "./picker/quote";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import { ShareContentPlugin } from "./actions/share-content";
-import { SpeechToTextPlugin } from "./actions/speech-to-text";
 import { SubSuperToolbarPlugin } from "./toolbar/sub-super";
 import { TABLE } from "../transformers/markdown-table";
 import { TabFocusPlugin } from "./tab-focus";
 import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 import { ToolbarPlugin } from "./toolbar";
-import { TreeViewPlugin } from "./actions/tree-view";
-import { TypingPerfPlugin } from "./typing-perf";
-import { useState } from "react";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 
 const placeholder = "Press / for commands...";
-const maxLength = 500;
 
-export function Plugins({}) {
+export function Plugins({
+  saving,
+  saved,
+  onSave,
+}: {
+  saving?: boolean;
+  saved?: boolean;
+  onSave?(state: SerializedEditorState): void;
+}) {
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
   const [isLinkEditMode, setIsLinkEditMode] = useState<boolean>(false);
+
+  const [editor] = useLexicalComposerContext();
+  const [activeEditor, setActiveEditor] = useState(editor);
+
+  useEffect(() => {
+    if (!onSave) return;
+
+    console.log("// 1. Register Selection Change listener");
+    const unregisterSelection = activeEditor.registerCommand(
+      SELECTION_CHANGE_COMMAND,
+      (_payload, newEditor) => {
+        setActiveEditor(newEditor);
+        return false;
+      },
+      COMMAND_PRIORITY_CRITICAL,
+    );
+
+    const unregisterSave = activeEditor.registerCommand(
+      KEY_DOWN_COMMAND,
+      (event) => {
+        const { code, ctrlKey, metaKey } = event;
+        if (code === "KeyS" && (ctrlKey || metaKey)) {
+          event.preventDefault();
+
+          onSave(activeEditor.getEditorState().toJSON());
+
+          return true; // Prevent further propagation
+        }
+        return false;
+      },
+      COMMAND_PRIORITY_CRITICAL,
+    );
+
+    // Clean up both listeners
+    return () => {
+      unregisterSelection();
+      unregisterSave();
+    };
+  }, [activeEditor, onSave]);
 
   const onRef = (_floatingAnchorElem: HTMLDivElement) => {
     if (_floatingAnchorElem !== null) {
@@ -102,31 +146,51 @@ export function Plugins({}) {
     <div className="relative">
       <ToolbarPlugin>
         {({ blockType }) => (
-          <div className="vertical-align-middle sticky top-0 z-10 flex items-center gap-2 overflow-auto border-b p-1">
-            <HistoryToolbarPlugin />
-            <Divider orientation="vertical" className="h-7" />
-            <BlockFormatDropDown />
-            {blockType === "code" ? (
-              <CodeLanguageToolbarPlugin />
-            ) : (
-              <>
-                <FontFamilyToolbarPlugin />
-                <FontSizeToolbarPlugin />
-                <Divider orientation="vertical" className="h-7" />
-                <FontFormatToolbarPlugin />
-                <Divider orientation="vertical" className="h-7" />
-                <SubSuperToolbarPlugin />
-                <LinkToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
-                <Divider orientation="vertical" className="h-7" />
-                <ClearFormattingToolbarPlugin />
-                <Divider orientation="vertical" className="h-7" />
-                <FontColorToolbarPlugin />
-                <FontBackgroundToolbarPlugin />
-                <Divider orientation="vertical" className="h-7" />
-                <ElementFormatToolbarPlugin />
-                <Divider orientation="vertical" className="h-7" />
-                <BlockInsertPlugin />
-              </>
+          <div className="vertical-align-middle sticky top-0 z-10 flex items-start gap-2 border-b border-content3">
+            <div className="flex items-center gap-2 flex-1 shrink overflow-x-auto overflow-y-hidden p-1">
+              <HistoryToolbarPlugin />
+              <Divider orientation="vertical" className="h-7" />
+              <BlockFormatDropDown />
+              {blockType === "code" ? (
+                <CodeLanguageToolbarPlugin />
+              ) : (
+                <>
+                  <FontFamilyToolbarPlugin />
+                  <FontSizeToolbarPlugin />
+                  <Divider orientation="vertical" className="h-7" />
+                  <FontFormatToolbarPlugin />
+                  <Divider orientation="vertical" className="h-7" />
+                  <SubSuperToolbarPlugin />
+                  <LinkToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
+                  <Divider orientation="vertical" className="h-7" />
+                  <ClearFormattingToolbarPlugin />
+                  <Divider orientation="vertical" className="h-7" />
+                  <FontColorToolbarPlugin />
+                  <Divider orientation="vertical" className="h-7" />
+                  <ElementFormatToolbarPlugin />
+                  <Divider orientation="vertical" className="h-7" />
+                  <BlockInsertPlugin />
+                </>
+              )}
+            </div>
+            {onSave && (
+              <div className="flex items-center gap-2 shrink-0 p-1">
+                <Button
+                  isIconOnly
+                  className="size-8"
+                  aria-label="Clear formatting"
+                  variant="bordered"
+                  size="sm"
+                  onPress={() => onSave(activeEditor.getEditorState().toJSON())}
+                  isLoading={saving}
+                >
+                  {saved ? (
+                    <CheckIcon className="size-4 text-success-600" />
+                  ) : (
+                    <SaveIcon className="size-4 text-default-600" />
+                  )}
+                </Button>
+              </div>
             )}
           </div>
         )}
@@ -139,7 +203,7 @@ export function Plugins({}) {
               <div className="" ref={onRef}>
                 <ContentEditable
                   placeholder={placeholder}
-                  className="ContentEditable__root relative block h-[calc(100vh-570px)] min-h-72 overflow-auto px-8 py-4 focus:outline-none"
+                  className="ContentEditable__root relative block min-h-72 overflow-auto px-8 py-4 focus:outline-none"
                 />
               </div>
             </div>
@@ -164,10 +228,6 @@ export function Plugins({}) {
 
         <LayoutPlugin />
 
-        {/* <AutoEmbedPlugin /> */}
-        {/* <TwitterPlugin />
-        <YouTubePlugin /> */}
-
         <CodeHighlightPlugin />
         <CodeActionMenuPlugin anchorElem={floatingAnchorElem} />
 
@@ -184,7 +244,6 @@ export function Plugins({}) {
             ...TEXT_MATCH_TRANSFORMERS,
           ]}
         />
-        <TypingPerfPlugin />
         <TabFocusPlugin />
         <AutocompletePlugin />
         <AutoLinkPlugin />
@@ -232,18 +291,8 @@ export function Plugins({}) {
         <ListMaxIndentLevelPlugin />
       </div>
       <ActionsPlugin>
-        <div className="clear-both flex items-center justify-between gap-2 overflow-auto border-t p-1">
-          <div className="flex flex-1 justify-start">
-            <MaxLengthPlugin maxLength={maxLength} />
-            <CharacterLimitPlugin maxLength={maxLength} charset="UTF-16" />
-          </div>
-          <div>
-            <CountCharacterPlugin charset="UTF-16" />
-          </div>
+        <div className="clear-both flex items-center justify-between gap-2 overflow-auto border-t border-content3 p-1">
           <div className="flex flex-1 justify-end">
-            <SpeechToTextPlugin />
-            <ShareContentPlugin />
-            <ImportExportPlugin />
             <MarkdownTogglePlugin
               shouldPreserveNewLinesInMarkdown={true}
               transformers={[
@@ -258,12 +307,10 @@ export function Plugins({}) {
                 ...TEXT_MATCH_TRANSFORMERS,
               ]}
             />
-            <EditModeTogglePlugin />
             <>
               <ClearEditorActionPlugin />
               <ClearEditorPlugin />
             </>
-            <TreeViewPlugin />
           </div>
         </div>
       </ActionsPlugin>

@@ -1,9 +1,15 @@
-import { CalendarDate } from "@internationalized/date";
+import { CalendarDate, ZonedDateTime } from "@internationalized/date";
+
 import { UnitsPeriodAfterOpeningUnit } from "@/lib/appwrite/types";
 import z from "zod";
 
 export const calendarDateSchema = z.custom<CalendarDate>(
   (val) => val instanceof CalendarDate,
+  { message: "Invalid date" },
+);
+
+export const zonedDateTimeSchema = z.custom<ZonedDateTime>(
+  (val) => val instanceof ZonedDateTime,
   { message: "Invalid date" },
 );
 
@@ -53,3 +59,16 @@ export const CreateStepSchema = z.object({
 });
 
 export type CreateStepValues = z.infer<typeof CreateStepSchema>;
+
+export const JournalEntrySchema = z.object({
+  occurredAt: zonedDateTimeSchema,
+  description: z.string().optional(),
+  // For the file, we handle the ID separately or via state during the upload
+  imageId: z.string().nullish(),
+  image: z
+    .union([z.instanceof(File), z.string()])
+    .nullable()
+    .optional(),
+});
+
+export type JournalEntryFormValues = z.infer<typeof JournalEntrySchema>;

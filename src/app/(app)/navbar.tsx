@@ -3,6 +3,14 @@
 import * as queryKeys from "@/lib/query/keys";
 
 import {
+  BookOpen,
+  Calendar,
+  Heart,
+  LayoutDashboard,
+  Package,
+  ShieldCheck,
+} from "lucide-react";
+import {
   Button,
   Navbar,
   NavbarBrand,
@@ -13,13 +21,6 @@ import {
   NavbarMenuToggle,
   Tooltip,
 } from "@heroui/react";
-import {
-  Calendar,
-  Heart,
-  LayoutDashboard,
-  Package,
-  ShieldCheck,
-} from "lucide-react";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -59,6 +60,7 @@ export default function AppNavbar() {
     { label: "Products", href: "/products", icon: Package },
     { label: "Wishlist", href: "/wishlist", icon: Heart },
     { label: "Routines", href: "/routines", icon: Calendar },
+    { label: "Journal", href: "/journal", icon: BookOpen },
   ];
 
   return (
