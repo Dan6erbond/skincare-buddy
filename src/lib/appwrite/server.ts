@@ -8,13 +8,16 @@ import {
   Storage,
   TablesDB,
   Teams,
+  Tokens,
 } from "node-appwrite";
 import { cookies, headers } from "next/headers";
 
 import { APPWRITE_SESSION_KEY } from "./const";
 import { redirect } from "next/navigation";
 
-export async function createClient(session?: string | null) {
+export async function createClient<S extends string | null | undefined>(
+  session?: S,
+) {
   const client = new Client()
     .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
     .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
@@ -23,7 +26,25 @@ export async function createClient(session?: string | null) {
     client.setSession(session);
   }
 
-  return client;
+  return {
+    client,
+    session: session as S,
+    get account() {
+      return new Account(client);
+    },
+    get tables() {
+      return new TablesDB(client);
+    },
+    get storage() {
+      return new Storage(client);
+    },
+    get teams() {
+      return new Teams(client);
+    },
+    get tokens() {
+      return new Tokens(client);
+    },
+  };
 }
 
 export async function createSessionClient() {
@@ -32,46 +53,14 @@ export async function createSessionClient() {
     throw new Error("No session");
   }
 
-  const client = await createClient(session.value);
-
-  return {
-    client,
-    session: session.value,
-    get account() {
-      return new Account(client);
-    },
-    get tables() {
-      return new TablesDB(client);
-    },
-    get storage() {
-      return new Storage(client);
-    },
-    get teams() {
-      return new Teams(client);
-    },
-  };
+  return await createClient(session.value);
 }
 
 export async function createAdminClient() {
-  const client = await createClient().then((c) =>
-    c.setKey(process.env.NEXT_APPWRITE_KEY!),
-  );
-
-  return {
-    client,
-    get account() {
-      return new Account(client);
-    },
-    get tables() {
-      return new TablesDB(client);
-    },
-    get storage() {
-      return new Storage(client);
-    },
-    get teams() {
-      return new Teams(client);
-    },
-  };
+  return await createClient().then(({ client, ...rest }) => ({
+    ...rest,
+    client: client.setKey(process.env.NEXT_APPWRITE_KEY!),
+  }));
 }
 
 export async function getLoggedInUser() {

@@ -2,7 +2,7 @@ import { Account, Client, Storage, TablesDB, Teams } from "appwrite";
 
 export { ID } from "appwrite";
 
-export const createClient = (session: string | null) => {
+export const createClient = (session?: string | null) => {
   const client = new Client();
 
   client

@@ -1,6 +1,8 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient, createSessionClient } from "@/lib/appwrite/server";
+
 import { bucketId } from "@/lib/appwrite/const";
-import { createSessionClient } from "@/lib/appwrite/server";
+import { createClient } from "@/lib/appwrite";
 
 export async function GET(
   _: NextRequest,
@@ -10,14 +12,39 @@ export async function GET(
 
   const { storage } = await createSessionClient();
 
-  const file = await storage.getFileView({
+  const file = await storage.getFile({
     bucketId,
     fileId: id,
   });
 
-  return new Response(file, {
-    headers: {
-      "content-type": "application/octet-stream",
-    },
+  const { tokens } = await createAdminClient();
+
+  let token: string | undefined;
+
+  const { tokens: tokensList } = await tokens.list({
+    bucketId: file.bucketId,
+    fileId: file.$id,
+    total: false,
   });
+
+  if (tokensList.length > 0) {
+    token = tokensList[0].secret;
+  } else {
+    token = await tokens
+      .createFileToken({
+        bucketId: file.bucketId,
+        fileId: file.$id,
+      })
+      .then((tok) => tok.secret);
+  }
+
+  const { storage: storageClient } = createClient();
+
+  return NextResponse.redirect(
+    storageClient.getFileView({
+      bucketId: file.bucketId,
+      fileId: file.$id,
+      token,
+    }),
+  );
 }
