@@ -12,7 +12,7 @@ import {
   useDisclosure,
 } from "@heroui/react";
 import { Download, Smartphone } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Image from "next/image";
 
@@ -109,7 +109,7 @@ export const InstallModal = () => {
   if (!deferredPrompt) return null;
 
   return (
-    <Modal isOpen onOpenChange={onOpenChange} backdrop="blur">
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
       <ModalContent>
         {(onClose) => (
           <>
