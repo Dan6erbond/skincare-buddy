@@ -1,6 +1,14 @@
 "use server";
 
-import { Account, Client, ID, OAuthProvider } from "node-appwrite";
+import {
+  Account,
+  Client,
+  ID,
+  OAuthProvider,
+  Storage,
+  TablesDB,
+  Teams,
+} from "node-appwrite";
 import { cookies, headers } from "next/headers";
 
 import { APPWRITE_SESSION_KEY } from "./const";
@@ -32,6 +40,15 @@ export async function createSessionClient() {
     get account() {
       return new Account(client);
     },
+    get tables() {
+      return new TablesDB(client);
+    },
+    get storage() {
+      return new Storage(client);
+    },
+    get teams() {
+      return new Teams(client);
+    },
   };
 }
 
@@ -44,6 +61,15 @@ export async function createAdminClient() {
     client,
     get account() {
       return new Account(client);
+    },
+    get tables() {
+      return new TablesDB(client);
+    },
+    get storage() {
+      return new Storage(client);
+    },
+    get teams() {
+      return new Teams(client);
     },
   };
 }

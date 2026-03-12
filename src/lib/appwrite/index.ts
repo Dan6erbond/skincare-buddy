@@ -1,4 +1,4 @@
-import { Client } from "appwrite";
+import { Account, Client, Storage, TablesDB, Teams } from "appwrite";
 
 export { ID } from "appwrite";
 
@@ -13,5 +13,19 @@ export const createClient = (session: string | null) => {
     client.setSession(session);
   }
 
-  return client;
+  return {
+    client,
+    get account() {
+      return new Account(client);
+    },
+    get tables() {
+      return new TablesDB(client);
+    },
+    get storage() {
+      return new Storage(client);
+    },
+    get teams() {
+      return new Teams(client);
+    },
+  };
 };

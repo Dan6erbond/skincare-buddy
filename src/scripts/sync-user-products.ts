@@ -1,7 +1,7 @@
 import { Brands, CatalogProducts, Products } from "@/lib/appwrite/types";
-import { ID, Query, TablesDB } from "node-appwrite";
 import { databaseId, tableIds } from "@/lib/appwrite/const";
 
+import { Query } from "node-appwrite";
 import { config } from "dotenv";
 import { createAdminClient } from "@/lib/appwrite/server";
 
@@ -9,9 +9,7 @@ config();
 config({ path: ".env.local" });
 
 async function main() {
-  const { client } = await createAdminClient();
-
-  const tables = new TablesDB(client);
+  const { tables } = await createAdminClient();
 
   const { rows: products } = await tables.listRows<Products>({
     databaseId,
