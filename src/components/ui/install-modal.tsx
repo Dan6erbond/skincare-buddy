@@ -66,7 +66,10 @@ export const InstallModal = () => {
               color="secondary"
               size="sm"
               variant="flat"
-              onPress={() => onOpen()}
+              onPress={() => {
+                onOpen();
+                if (id) closeToast(id);
+              }}
             >
               Install
             </Button>

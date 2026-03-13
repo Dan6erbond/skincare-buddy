@@ -11,6 +11,7 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
+  cn,
   useDisclosure,
 } from "@heroui/react";
 import { Controller, useForm } from "react-hook-form";
@@ -121,12 +122,13 @@ export function JournalEntryModal({ entry, ...props }: JournalEntryModalProps) {
         variant={entry ? "flat" : "solid"}
         startContent={
           entry ? (
-            <Pencil className="group-[.text-tiny]:size-4 size-5" />
+            <Pencil className={cn(props.size === "sm" ? "size-4" : "size-5")} />
           ) : (
-            <BookPlus className="group-[.text-tiny]:size-4 size-5" />
+            <BookPlus
+              className={cn(props.size === "sm" ? "size-4" : "size-5")}
+            />
           )
         }
-        className="group"
         {...props}
       >
         {entry ? "Edit Entry" : "New Journal Entry"}

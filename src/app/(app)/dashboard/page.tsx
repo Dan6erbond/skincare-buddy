@@ -155,7 +155,7 @@ export default function DashboardPage() {
 
         {/* Recent Journal Entries Section */}
         <section className="mt-12 space-y-4">
-          <div className="flex items-center justify-between px-1">
+          <div className="flex items-center justify-between px-1 flex-wrap gap-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <BookOpen className="size-5 text-warning" />
               Latest Progress

@@ -225,8 +225,9 @@ export function CreateWishlistItemDrawer() {
         placement="bottom"
         onOpenChange={onOpenChange}
         classNames={{
-          base: "max-h-[40%] bottom-2 inset-x-2 w-auto rounded-b-large",
+          base: "md:max-h-[40%] bottom-2 inset-x-2 w-auto rounded-b-large",
         }}
+        scrollBehavior="outside"
       >
         <DrawerContent>
           {(onClose) => (
