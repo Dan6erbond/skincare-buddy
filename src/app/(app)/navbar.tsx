@@ -2,14 +2,7 @@
 
 import * as queryKeys from "@/lib/query/keys";
 
-import {
-  BookOpen,
-  Calendar,
-  Heart,
-  LayoutDashboard,
-  Package,
-  ShieldCheck,
-} from "lucide-react";
+import { BookOpen, Calendar, Heart, Package, ShieldCheck } from "lucide-react";
 import {
   Button,
   Navbar,
@@ -56,7 +49,6 @@ export default function AppNavbar() {
   });
 
   const navLinks = [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { label: "Products", href: "/products", icon: Package },
     { label: "Wishlist", href: "/wishlist", icon: Heart },
     { label: "Routines", href: "/routines", icon: Calendar },
