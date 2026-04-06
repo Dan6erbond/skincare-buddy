@@ -64,7 +64,6 @@ import {
 import { AIExportButton } from "@/components/ui/ai-export-button";
 import { ModelCreate } from "@/lib/appwrite/utils";
 import ProductListbox from "@/components/product/listbox";
-import ProductSelect from "@/components/product/select";
 import { RoutineDescription } from "./description";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
@@ -271,7 +270,7 @@ function RegimentManager({
 
   // Keep local state in sync with server data
   useEffect(() => {
-    const sortedSteps = [...(regiment.steps || [])].sort((a, b) => {
+    const sortedSteps = (regiment.steps || []).toSorted((a, b) => {
       if (a.order && b.order) return a.order.localeCompare(b.order);
       return 0; // Fallback to default Appwrite order if keys aren't set yet
     });
