@@ -3,7 +3,6 @@
 import * as queryKeys from "@/lib/query/keys";
 
 import {
-  Avatar,
   Chip,
   Input,
   Listbox,
@@ -11,6 +10,7 @@ import {
   ListboxProps,
   ScrollShadow,
   Spinner,
+  User,
 } from "@heroui/react";
 import { Ref, useMemo } from "react";
 import { databaseId, tableIds } from "@/lib/appwrite/const";
@@ -148,26 +148,22 @@ export default function ProductListbox({
         bottomContent={bottomContent}
         {...props}
       >
-        {(item: Products) => (
-          <ListboxItem key={item.$id} textValue={item.name}>
-            <div className="flex gap-2 items-center">
-              <Avatar
-                alt={item.name}
-                className="shrink-0"
-                size="sm"
-                radius="md"
-                color="primary"
-                src={
-                  (item.catalogProduct?.imageUrl ??
-                    item.catalogBrand?.logoUrl) ||
-                  undefined
-                }
-              />
-              <div className="flex flex-col">
-                <span className="text-small font-medium">{item.name}</span>
-                <span className="text-tiny text-default-400">{item.brand}</span>
-              </div>
-            </div>
+        {(product) => (
+          <ListboxItem key={product.$id} textValue={product.name}>
+            <User
+              name={product.name}
+              description={product.brand}
+              avatarProps={{
+                src:
+                  (product.catalogProduct?.imageUrl ??
+                    product.catalogBrand?.logoUrl) ||
+                  undefined,
+                radius: "md",
+                color: "primary",
+                size: "sm",
+                className: "shrink-0 rounded-full",
+              }}
+            />
           </ListboxItem>
         )}
       </Listbox>

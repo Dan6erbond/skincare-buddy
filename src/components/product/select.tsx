@@ -2,7 +2,7 @@
 
 import * as queryKeys from "@/lib/query/keys";
 
-import { Select, SelectItem, SelectProps } from "@heroui/react";
+import { Select, SelectItem, SelectProps, User } from "@heroui/react";
 import { databaseId, tableIds } from "@/lib/appwrite/const";
 
 import { CollectionElement } from "@react-types/shared";
@@ -74,12 +74,25 @@ export default function ProductSelect(props: Omit<SelectProps, "children">) {
       {...props}
     >
       {
-        ((p: Products) => (
-          <SelectItem key={p.$id} textValue={`${p.brand} ${p.name}`}>
-            <div className="flex flex-col">
-              <span className="text-small font-bold">{p.name}</span>
-              <span className="text-tiny text-default-400">{p.brand}</span>
-            </div>
+        ((product: Products) => (
+          <SelectItem
+            key={product.$id}
+            textValue={`${product.brand} ${product.name}`}
+          >
+            <User
+              name={product.name}
+              description={product.brand}
+              avatarProps={{
+                src:
+                  (product.catalogProduct?.imageUrl ??
+                    product.catalogBrand?.logoUrl) ||
+                  undefined,
+                radius: "md",
+                color: "primary",
+                size: "sm",
+                className: "shrink-0 rounded-full",
+              }}
+            />
           </SelectItem>
         )) as (item: object) => CollectionElement<object>
       }
