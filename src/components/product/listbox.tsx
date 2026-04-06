@@ -44,16 +44,29 @@ export default function ProductListbox({
   const limit = 3;
 
   const { data, fetchNextPage, hasNextPage, isFetching } = useInfiniteQuery({
-    queryKey: [...queryKeys.products({ search: searchValue })],
-    queryFn: async ({ pageParam }) => {
+    queryKey: queryKeys.products({ search: searchValue }),
+    queryFn: async ({ pageParam, queryKey: [_, { search }] }) => {
       const queries = [
         Query.equal("userId", user!.$id),
+        Query.select([
+          "*",
+          "catalogProduct.*",
+          "catalogBrand.*",
+        ]),
         Query.orderAsc("name"),
+        Query.orderAsc("$updatedAt"),
+        Query.orderAsc("$createdAt"),
         Query.limit(limit),
       ];
 
-      if (searchValue) {
-        queries.push(Query.search("name", searchValue));
+      if (search) {
+        queries.push(
+          Query.or([
+            Query.search("name", search),
+            Query.search("brand", search),
+            Query.search("category", search),
+          ]),
+        );
       }
 
       if (pageParam) {
