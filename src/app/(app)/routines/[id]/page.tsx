@@ -59,6 +59,7 @@ import {
 
 import { AIExportButton } from "@/components/ui/ai-export-button";
 import { ModelCreate } from "@/lib/appwrite/utils";
+import ProductListbox from "@/components/product/listbox";
 import ProductSelect from "@/components/product/select";
 import { RoutineDescription } from "./description";
 import { useAppwrite } from "@/contexts/appwrite";
@@ -760,16 +761,33 @@ function StepSettingsDrawer({
                   field: { value, onChange, ...field },
                   fieldState: { invalid, error },
                 }) => (
-                  <ProductSelect
-                    label="Formulas in this step"
-                    selectionMode="multiple"
-                    variant="bordered"
-                    selectedKeys={new Set(value)}
-                    onSelectionChange={(keys) => onChange(Array.from(keys))}
-                    isInvalid={invalid}
-                    errorMessage={error?.message}
-                    {...field}
-                  />
+                  <div className="flex flex-col gap-2">
+                    {/* Label for the Listbox since it doesn't have a built-in one like Select */}
+                    <span className="text-small font-medium text-default-700">
+                      Formulas in this step
+                    </span>
+
+                    <ProductListbox
+                      variant="bordered"
+                      selectionMode="multiple"
+                      selectedKeys={new Set(value)}
+                      onSelectionChange={(keys) => {
+                        // If HeroUI selection is 'all', you might need to handle that,
+                        // but for standard multi-select, Array.from(keys) is perfect.
+                        onChange(Array.from(keys));
+                      }}
+                      // Listbox doesn't have isInvalid/errorMessage props by default,
+                      // so we apply styling or helper text manually or via classNames.
+                      className={invalid ? "border-danger" : ""}
+                      {...field}
+                    />
+
+                    {invalid && (
+                      <span className="text-tiny text-danger">
+                        {error?.message}
+                      </span>
+                    )}
+                  </div>
                 )}
               />
 
