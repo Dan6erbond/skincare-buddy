@@ -280,19 +280,17 @@ function RegimentManager({
     setItems(sorted);
   }, [regiment.steps]);
 
-  const { mutate: updateStepOrder } = useMutation({
-    mutationFn: async ({ id, order }: { id: string; order: string }) => {
-      return await tables.updateRow({
-        databaseId,
-        tableId: tableIds.steps,
-        rowId: id,
-        data: { order },
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.routine(routineId) });
-    },
-  });
+  const { mutate: updateStepOrder, mutateAsync: updateStepOrderAsync } =
+    useMutation({
+      mutationFn: async ({ id, order }: { id: string; order: string }) => {
+        return await tables.updateRow({
+          databaseId,
+          tableId: tableIds.steps,
+          rowId: id,
+          data: { order },
+        });
+      },
+    });
 
   const handleReorder = async (newOrder: Steps[]) => {
     // 1. Identify what moved
@@ -300,6 +298,9 @@ function RegimentManager({
       (item, i) => item.$id !== items[i]?.$id,
     );
     if (movedIndex === -1) return;
+
+    // Optimistic UI update
+    setItems(newOrder);
 
     const movedItem = newOrder[movedIndex];
 
@@ -319,28 +320,53 @@ function RegimentManager({
       // Update all items in the background
       await Promise.all(
         newOrder.map((s, i) =>
-          tables.updateRow({
-            databaseId,
-            tableId: tableIds.steps,
-            rowId: s.$id,
-            data: { order: keys[i] },
-          }),
+          updateStepOrderAsync({ id: s.$id, order: keys[i] }),
         ),
       );
-      queryClient.invalidateQueries({ queryKey: queryKeys.routine(routineId) });
+
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.routine(routineId),
+      });
+
       return;
     }
 
     // 3. Normal Fractional Indexing
-    const before = newOrder[movedIndex - 1]?.order; // null if first
-    const after = newOrder[movedIndex + 1]?.order; // null if last
-    const newKey = generateKeyBetween(before, after);
+    const before = newOrder[movedIndex - 1]?.order ?? null;
+    const after = newOrder[movedIndex + 1]?.order ?? null;
 
-    // Optimistic UI update
-    setItems(newOrder);
+    let newKey: string;
+
+    try {
+      newKey = generateKeyBetween(before, after);
+    } catch (e) {
+      // Rebalance everything
+      const keys = generateNKeysBetween(null, null, newOrder.length);
+
+      await Promise.all(
+        newOrder.map((s, i) =>
+          updateStepOrderAsync({ id: s.$id, order: keys[i] }),
+        ),
+      );
+
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.routine(routineId),
+      });
+
+      return;
+    }
 
     // Server update
-    updateStepOrder({ id: movedItem.$id, order: newKey });
+    updateStepOrder(
+      { id: movedItem.$id, order: newKey },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.routine(routineId),
+          });
+        },
+      },
+    );
   };
 
   return (
