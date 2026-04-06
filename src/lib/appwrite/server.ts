@@ -30,7 +30,30 @@ export async function createClient<S extends string | null | undefined>(
     client,
     session: session as S,
     get account() {
-      return new Account(client);
+      const account = new Account(client);
+
+      return new Proxy(account, {
+        get(target, prop, receiver) {
+          const value = Reflect.get(target, prop, receiver);
+
+          // Only intercept the 'get' method
+          if (prop === "get" && typeof value === "function") {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return (...args: any[]) => {
+              if (!session) {
+                // Return a rejected promise to maintain the async signature
+                return Promise.reject(
+                  new Error("No session provided to client."),
+                );
+              }
+              return value.apply(target, args);
+            };
+          }
+
+          // Return all other properties/methods as they are
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
     },
     get tables() {
       return new TablesDB(client);
