@@ -1,16 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getLoggedInUser } from "@/lib/appwrite/server";
+import { APPWRITE_SESSION_KEY } from "@/lib/appwrite/const";
+import { Models } from "node-appwrite";
+import { createClient } from "@/lib/appwrite/server";
 
 export async function proxy(req: NextRequest) {
+  const session = req.cookies.get(APPWRITE_SESSION_KEY)?.value;
+
+  let user: Models.User | undefined;
+  if (session) {
+    const { account } = await createClient(session);
+    try {
+      user = await account.get();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   if (req.nextUrl.pathname === "/") {
-    if (await getLoggedInUser()) {
+    if (user) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
     return NextResponse.next();
   }
 
-  if ((await getLoggedInUser()) == null) {
+  if (user == null) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
