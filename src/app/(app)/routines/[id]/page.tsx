@@ -33,6 +33,7 @@ import {
   FlaskConical,
   GripVertical,
   History,
+  Layout,
   Minus,
   Plus,
   Settings2,
@@ -62,6 +63,7 @@ import {
 } from "@tanstack/react-query";
 
 import { AIExportButton } from "@/components/ui/ai-export-button";
+import { DeleteRoutineModal } from "@/components/routine/delete-modal";
 import { ModelCreate } from "@/lib/appwrite/utils";
 import ProductListbox from "@/components/product/listbox";
 import { RoutineDescription } from "./description";
@@ -176,40 +178,48 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
-      <header className="flex flex-col md:flex-row gap-4 justify-between items-start">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-4xl font-black uppercase tracking-tighter italic">
-              {routine.name}
-            </h1>
-            <Chip
-              color="secondary"
-              variant="flat"
-              size="sm"
-              className="font-bold"
-            >
-              ROUTINE
-            </Chip>
-          </div>
-          <p className="text-default-500 font-medium">
-            Manage your regiments and product steps
-          </p>
-        </div>
+      <Card className="p-4 shadow-sm border-none bg-default-50/50">
+        <CardBody className="gap-6">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-start">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Layout className="text-secondary" size={20} />
+                <span className="text-tiny font-bold text-secondary uppercase tracking-widest">
+                  Routine
+                </span>
+              </div>
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                <h1 className="text-4xl font-black uppercase tracking-tight italic">
+                  {routine.name}
+                </h1>
+                <div className="flex items-center gap-1 mb-2">
+                  <DeleteRoutineModal routine={routine} />
+                </div>
+              </div>
+              <p className="text-xl text-default-500 font-medium">
+                Manage your regiments and product steps
+              </p>
+            </div>
 
-        <div className="flex gap-2">
-          {routineAnalysisText && (
-            <AIExportButton
-              variant="shadow"
-              color="secondary"
-              size="md"
-              clipboardText={routineAnalysisText}
-              startContent={<Sparkles className="size-4" />}
-            >
-              AI Analysis
-            </AIExportButton>
-          )}
-        </div>
-      </header>
+            <div className="flex flex-col items-end gap-2">
+              <Chip variant="shadow" color="secondary" className="font-bold">
+                ROUTINE
+              </Chip>
+              {routineAnalysisText && (
+                <AIExportButton
+                  variant="shadow"
+                  color="secondary"
+                  size="md"
+                  clipboardText={routineAnalysisText}
+                  startContent={<Sparkles className="size-4" />}
+                >
+                  AI Analysis
+                </AIExportButton>
+              )}
+            </div>
+          </div>
+        </CardBody>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Right: Regiments & Steps */}
@@ -246,7 +256,6 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
                 Notes & Guidance
               </span>
             </div>
-            {/* Pass your editor here */}
             <RoutineDescription routine={routine} />
           </div>
         </div>
