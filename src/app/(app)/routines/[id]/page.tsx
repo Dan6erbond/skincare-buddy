@@ -270,12 +270,14 @@ function RegimentManager({
 
   // Keep local state in sync with server data
   useEffect(() => {
-    const sortedSteps = (regiment.steps || []).toSorted((a, b) => {
-      if (a.order && b.order) return a.order.localeCompare(b.order);
-      return 0; // Fallback to default Appwrite order if keys aren't set yet
+    const sorted = (regiment.steps || []).toSorted((a, b) => {
+      if (!a.order) return -1;
+      if (!b.order) return 1;
+      // Use raw string comparison
+      return a.order < b.order ? -1 : a.order > b.order ? 1 : 0;
     });
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setItems(sortedSteps);
+    setItems(sorted);
   }, [regiment.steps]);
 
   const { mutate: updateStepOrder } = useMutation({
