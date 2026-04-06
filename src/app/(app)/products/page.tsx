@@ -163,11 +163,12 @@ export default function Page() {
         icon: <ActivityIcon size={16} />,
         Cell: ({ product }) => {
           const activeUnits = product.units?.filter((u) => !u.finishedAt) || [];
+          const hasStock = activeUnits.length > 0; // Check if we have anything at all
           const openedUnit = activeUnits.find((u) => u.openedAt);
+
           const urgentDate = activeUnits.reduce(
             (earliest: Date | null, unit) => {
               const exp = getExpiryDate(unit);
-
               if (!earliest || (exp && exp < earliest)) return exp;
               return earliest;
             },
@@ -176,7 +177,16 @@ export default function Page() {
 
           return (
             <div className="flex gap-2">
-              {openedUnit ? (
+              {!hasStock ? (
+                <Chip
+                  size="sm"
+                  color="default"
+                  variant="flat"
+                  className="uppercase opacity-50"
+                >
+                  Out of Stock
+                </Chip>
+              ) : openedUnit ? (
                 <Chip
                   size="sm"
                   color="success"
@@ -195,6 +205,7 @@ export default function Page() {
                   Stockpiled
                 </Chip>
               )}
+
               {urgentDate && urgentDate < now && (
                 <Chip
                   size="sm"
