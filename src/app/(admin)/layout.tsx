@@ -1,4 +1,4 @@
-import { Client, Models, Query, Teams } from "node-appwrite";
+import { Models, Query, Teams } from "node-appwrite";
 
 import AdminNavbar from "./navbar";
 import { createSessionClient } from "@/lib/appwrite/server";
@@ -6,12 +6,10 @@ import { redirect } from "next/navigation";
 import { teamIds } from "@/lib/appwrite/const";
 
 export default async function AdminLayout({ children }: LayoutProps<"/">) {
-  let c: Client | undefined;
   let user: Models.User | undefined;
+  const { account, client: c } = await createSessionClient();
 
   try {
-    const { account, client } = await createSessionClient();
-    c = client;
     user = await account.get();
   } catch (error) {
     console.error(error);

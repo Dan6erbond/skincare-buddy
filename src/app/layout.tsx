@@ -2,14 +2,12 @@ import "./globals.css";
 
 import { Geist, Lexend_Deca } from "next/font/google";
 
-import { APPWRITE_SESSION_KEY } from "@/lib/appwrite/const";
 import { AuthProvider } from "@/contexts/auth";
 import { Metadata } from "next";
 import { Models } from "node-appwrite";
 import Providers from "@/components/providers";
 import { cn } from "@heroui/react";
-import { cookies } from "next/headers";
-import { createClient } from "@/lib/appwrite/server";
+import { createSessionClient } from "@/lib/appwrite/server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,16 +34,12 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   let user: Models.User | null = null;
 
-  const session = (await cookies()).get(APPWRITE_SESSION_KEY)?.value ?? null;
+  const { session, account } = await createSessionClient();
 
-  if (session) {
-    const { account } = await createClient(session);
-
-    try {
-      user = await account.get();
-    } catch (error) {
-      console.error(error);
-    }
+  try {
+    user = await account.get();
+  } catch (error) {
+    console.error(error);
   }
 
   return (

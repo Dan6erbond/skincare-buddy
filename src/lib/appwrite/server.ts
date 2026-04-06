@@ -48,12 +48,8 @@ export async function createClient<S extends string | null | undefined>(
 }
 
 export async function createSessionClient() {
-  const session = (await cookies()).get(APPWRITE_SESSION_KEY);
-  if (!session || !session.value) {
-    throw new Error("No session");
-  }
-
-  return await createClient(session.value);
+  const session = (await cookies()).get(APPWRITE_SESSION_KEY)?.value;
+  return await createClient(session);
 }
 
 export async function createAdminClient() {
@@ -64,8 +60,9 @@ export async function createAdminClient() {
 }
 
 export async function getLoggedInUser() {
+  const { account } = await createSessionClient();
+
   try {
-    const { account } = await createSessionClient();
     return await account.get();
   } catch (error) {
     console.error(error);
