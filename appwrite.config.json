@@ -471,6 +471,15 @@
                     "twoWayKey": "steps",
                     "onDelete": "cascade",
                     "side": "parent"
+                },
+                {
+                    "key": "order",
+                    "type": "varchar",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
                 }
             ],
             "indexes": []
@@ -754,6 +763,53 @@
         },
         {
             "$id": "journal_entry",
+            "$permissions": [
+                "create(\"users\")"
+            ],
+            "databaseId": "skincare-buddy",
+            "name": "journal_entry",
+            "enabled": true,
+            "rowSecurity": true,
+            "columns": [
+                {
+                    "key": "occurredAt",
+                    "type": "datetime",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "description",
+                    "type": "longtext",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "imageId",
+                    "type": "varchar",
+                    "required": false,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "userId",
+                    "type": "varchar",
+                    "required": true,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "journal_entries",
             "$permissions": [
                 "create(\"users\")"
             ],

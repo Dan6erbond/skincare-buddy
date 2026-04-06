@@ -4,6 +4,8 @@ import * as queryKeys from "@/lib/query/keys";
 
 import {
   Button,
+  Card,
+  CardBody,
   Chip,
   Drawer,
   DrawerBody,
@@ -22,12 +24,14 @@ import {
   Spinner,
   Tab,
   Tabs,
+  addToast,
   useDisclosure,
 } from "@heroui/react";
 import {
   Calendar,
   Clock,
   FlaskConical,
+  GripVertical,
   Plus,
   Settings2,
   Sparkles,
@@ -42,8 +46,10 @@ import {
   Routines,
   Steps,
 } from "@/lib/appwrite/types";
+import { Reorder, useDragControls } from "framer-motion";
 import { databaseId, tableIds } from "@/lib/appwrite/const";
-import { use, useMemo, useState } from "react";
+import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
+import { use, useEffect, useMemo, useState } from "react";
 import {
   useMutation,
   useQueries,
@@ -245,18 +251,108 @@ function RegimentManager({
   regiment: Regiments;
   routineId: string;
 }) {
+  const { tables } = useAppwrite();
+  const queryClient = useQueryClient();
+
+  // Local state for smooth dragging
+  const [items, setItems] = useState(regiment.steps || []);
+
+  // Keep local state in sync with server data
+  useEffect(() => {
+    const sortedSteps = [...(regiment.steps || [])].sort((a, b) => {
+      if (a.order && b.order) return a.order.localeCompare(b.order);
+      return 0; // Fallback to default Appwrite order if keys aren't set yet
+    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setItems(sortedSteps);
+  }, [regiment.steps]);
+
+  const { mutate: updateStepOrder } = useMutation({
+    mutationFn: async ({ id, order }: { id: string; order: string }) => {
+      return await tables.updateRow({
+        databaseId,
+        tableId: tableIds.steps,
+        rowId: id,
+        data: { order },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.routine(routineId) });
+    },
+  });
+
+  const handleReorder = async (newOrder: Steps[]) => {
+    // 1. Identify what moved
+    const movedIndex = newOrder.findIndex(
+      (item, i) => item.$id !== items[i]?.$id,
+    );
+    if (movedIndex === -1) return;
+
+    const movedItem = newOrder[movedIndex];
+
+    // 2. Check if initialization is needed (any null orders)
+    const needsInitialization = newOrder.some((s) => !s.order);
+
+    if (needsInitialization) {
+      const keys = generateNKeysBetween(null, null, newOrder.length);
+
+      addToast({
+        title: "Order Initialized",
+        description:
+          "An initial order was set. You may need to refresh if changes don't appear.",
+        color: "warning",
+      });
+
+      // Update all items in the background
+      await Promise.all(
+        newOrder.map((s, i) =>
+          tables.updateRow({
+            databaseId,
+            tableId: tableIds.steps,
+            rowId: s.$id,
+            data: { order: keys[i] },
+          }),
+        ),
+      );
+      queryClient.invalidateQueries({ queryKey: queryKeys.routine(routineId) });
+      return;
+    }
+
+    // 3. Normal Fractional Indexing
+    const before = newOrder[movedIndex - 1]?.order; // null if first
+    const after = newOrder[movedIndex + 1]?.order; // null if last
+    const newKey = generateKeyBetween(before, after);
+
+    // Optimistic UI update
+    setItems(newOrder);
+
+    // Server update
+    updateStepOrder({ id: movedItem.$id, order: newKey });
+  };
+
   return (
     <div className="space-y-4">
-      {regiment.steps?.map((step, idx) => (
-        <StepManager
-          key={step.$id}
-          stepId={step.$id}
-          index={idx}
-          routineId={routineId}
-        />
-      ))}
+      <Reorder.Group
+        axis="y"
+        values={items}
+        onReorder={handleReorder}
+        className="space-y-3"
+      >
+        {items.map((step, idx) => (
+          <StepManager
+            key={step.$id}
+            step={step}
+            index={idx}
+            routineId={routineId}
+          />
+        ))}
+      </Reorder.Group>
 
-      <CreateStepModal regimentId={regiment.$id} routineId={routineId} />
+      <CreateStepModal
+        regimentId={regiment.$id}
+        routineId={routineId}
+        lastOrder={items[items.length - 1]?.order ?? null}
+      />
     </div>
   );
 }
@@ -346,9 +442,14 @@ function CreateRegimentModal({ routineId }: { routineId: string }) {
 interface CreateStepModalProps {
   regimentId: string;
   routineId: string;
+  lastOrder: string | null;
 }
 
-function CreateStepModal({ regimentId, routineId }: CreateStepModalProps) {
+function CreateStepModal({
+  regimentId,
+  routineId,
+  lastOrder,
+}: CreateStepModalProps) {
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
   const { tables } = useAppwrite();
   const { user } = useAuth();
@@ -362,10 +463,14 @@ function CreateStepModal({ regimentId, routineId }: CreateStepModalProps) {
 
   const { mutate: createStep, isPending } = useMutation({
     mutationFn: async (values: CreateStepValues) => {
+      // Generate the new key: (lastOrder, null) puts it at the end
+      const newOrder = generateKeyBetween(lastOrder, null);
+
       return await tables.createRow<
         Omit<ModelCreate<Steps>, "regiment" | "products"> & {
           regiment: string;
           products: string[];
+          order: string;
         }
       >({
         databaseId,
@@ -376,6 +481,7 @@ function CreateStepModal({ regimentId, routineId }: CreateStepModalProps) {
           description: values.description ?? null,
           regiment: regimentId,
           products: values.productIds,
+          order: newOrder,
         },
         permissions: [
           Permission.read(Role.user(user!.$id)),
@@ -461,74 +567,97 @@ function CreateStepModal({ regimentId, routineId }: CreateStepModalProps) {
 }
 
 function StepManager({
-  stepId,
   index,
   routineId,
+  step: initialStep,
 }: {
-  stepId: string;
   index: number;
   routineId: string;
+  step: Steps;
 }) {
   const { tables } = useAppwrite();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const controls = useDragControls();
 
-  // 1. Fetch deep step details (including products)
   const { data: step, isLoading } = useQuery({
-    queryKey: queryKeys.step(stepId),
+    queryKey: queryKeys.step(initialStep.$id),
     queryFn: async () => {
       return await tables.getRow<Steps>({
         databaseId,
         tableId: tableIds.steps,
-        rowId: stepId,
+        rowId: initialStep.$id,
         queries: [Query.select(["*", "products.*"])],
       });
     },
   });
 
-  if (isLoading) return <Skeleton className="h-20 w-full rounded-2xl" />;
-  if (!step) return null;
+  if (isLoading) return <Skeleton className="h-24 w-full rounded-2xl" />;
 
   return (
-    <>
-      <div className="group flex items-center gap-4 p-4 rounded-2xl bg-default-50 border-1 border-default-200 hover:border-secondary transition-all">
-        <div className="flex-none w-8 h-8 rounded-full bg-secondary/10 text-secondary flex items-center justify-center font-black text-sm">
-          {index + 1}
-        </div>
-
-        <div className="flex-1 min-w-0 w-full">
-          <h4 className="font-bold uppercase text-medium">{step.name}</h4>
-          <div className="flex gap-2 mt-1 flex-wrap">
-            {step.products?.map((p) => (
-              <Chip
-                key={p.$id}
-                variant="flat"
-                className="min-w-0"
-                classNames={{ content: "truncate" }}
-              >
-                {p.brand} {p.name}
-              </Chip>
-            ))}
+    <Reorder.Item
+      value={initialStep}
+      dragListener={false}
+      dragControls={controls}
+      className="list-none"
+    >
+      <Card
+        fullWidth
+        isHoverable
+        className="group border-1 border-default-200 hover:border-secondary transition-colors"
+        shadow="sm"
+      >
+        <CardBody className="flex flex-row items-center gap-4 p-4">
+          {/* Drag Handle using Lucide and Tailwind */}
+          <div
+            className="cursor-grab active:cursor-grabbing p-1 text-default-400 hover:text-secondary transition-colors"
+            onPointerDown={(e) => controls.start(e)}
+          >
+            <GripVertical size={20} />
           </div>
-        </div>
 
-        <Button
-          isIconOnly
-          size="sm"
-          variant="light"
-          onPress={onOpen}
-          className="opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          <Settings2 size={16} />
-        </Button>
-      </div>
+          <div className="flex-none w-8 h-8 rounded-full bg-secondary/10 text-secondary flex items-center justify-center font-black text-sm">
+            {index + 1}
+          </div>
 
-      <StepSettingsDrawer
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-        step={step}
-        routineId={routineId}
-      />
-    </>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold uppercase text-medium text-foreground">
+              {initialStep.name}
+            </h4>
+            <div className="flex gap-2 mt-1 flex-wrap">
+              {step?.products?.map((p) => (
+                <Chip
+                  key={p.$id}
+                  variant="flat"
+                  size="sm"
+                  classNames={{ content: "truncate" }}
+                >
+                  {p.brand} {p.name}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            onPress={onOpen}
+            className="opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Settings2 size={18} className="text-default-500" />
+          </Button>
+        </CardBody>
+      </Card>
+
+      {step && (
+        <StepSettingsDrawer
+          isOpen={isOpen}
+          onOpenChange={onOpenChange}
+          step={step}
+          routineId={routineId}
+        />
+      )}
+    </Reorder.Item>
   );
 }
 

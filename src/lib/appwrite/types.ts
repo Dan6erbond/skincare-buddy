@@ -66,6 +66,7 @@ export type Steps = Models.Row & {
     description: string | null;
     products: Products[];
     regiment: Regiments;
+    order: string | null;
 }
 
 export type WishlistProducts = Models.Row & {
@@ -97,6 +98,13 @@ export type CatalogProducts = Models.Row & {
     imageUrl: string | null;
     description: string | null;
     userProducts: Products[];
+}
+
+export type JournalEntry = Models.Row & {
+    occurredAt: string;
+    description: string | null;
+    imageId: string | null;
+    userId: string;
 }
 
 export type JournalEntries = Models.Row & {
