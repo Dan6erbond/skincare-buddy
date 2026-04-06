@@ -32,6 +32,8 @@ import {
   Clock,
   FlaskConical,
   GripVertical,
+  History,
+  Minus,
   Plus,
   Settings2,
   Sparkles,
@@ -41,10 +43,12 @@ import { Controller, useForm } from "react-hook-form";
 import { CreateStepSchema, CreateStepValues } from "@/lib/schema";
 import { ID, Permission, Query, Role } from "appwrite";
 import {
+  Products,
   Regiments,
   RegimentsType,
   Routines,
   Steps,
+  StepsHistory,
 } from "@/lib/appwrite/types";
 import { Reorder, useDragControls } from "framer-motion";
 import { databaseId, tableIds } from "@/lib/appwrite/const";
@@ -105,7 +109,14 @@ export default function Page({ params }: PageProps<"/routines/[id]">) {
               databaseId,
               tableId: tableIds.steps,
               rowId: step.$id,
-              queries: [Query.select(["*", "products.*"])],
+              queries: [
+                Query.select([
+                  "*",
+                  "products.*",
+                  "histories.*",
+                  "histories.products.*",
+                ]),
+              ],
             });
           },
         })) ?? [],
@@ -587,7 +598,14 @@ function StepManager({
         databaseId,
         tableId: tableIds.steps,
         rowId: initialStep.$id,
-        queries: [Query.select(["*", "products.*"])],
+        queries: [
+          Query.select([
+            "*",
+            "products.*",
+            "histories.*",
+            "histories.products.*",
+          ]),
+        ],
       });
     },
   });
@@ -662,6 +680,24 @@ function StepManager({
   );
 }
 
+const getProductDiff = (
+  current: Products[] = [],
+  historical: Products[] = [],
+) => {
+  // Ensure we have arrays to work with
+  const safeCurrent = current ?? [];
+  const safeHistorical = historical ?? [];
+
+  const currentIds = new Set(safeCurrent.map((p) => p.$id));
+  const historicalIds = new Set(safeHistorical.map((p) => p.$id));
+
+  return {
+    removed: safeHistorical.filter((p) => !currentIds.has(p.$id)),
+    added: safeCurrent.filter((p) => !historicalIds.has(p.$id)),
+    unchanged: safeCurrent.filter((p) => historicalIds.has(p.$id)),
+  };
+};
+
 function StepSettingsDrawer({
   isOpen,
   onOpenChange,
@@ -673,6 +709,7 @@ function StepSettingsDrawer({
   step: Steps;
   routineId: string;
 }) {
+  const { user } = useAuth();
   const { tables } = useAppwrite();
   const queryClient = useQueryClient();
 
@@ -688,6 +725,23 @@ function StepSettingsDrawer({
   // 1. Update Mutation
   const { mutate: updateStep, isPending: isUpdating } = useMutation({
     mutationFn: async (values: CreateStepValues) => {
+      // A. Create the history entry using the CURRENT state of the step
+      await tables.createRow<
+        Omit<ModelCreate<StepsHistory>, "products"> & {
+          products: string[];
+        }
+      >({
+        databaseId,
+        tableId: tableIds.stepsHistory,
+        rowId: ID.unique(),
+        data: {
+          step: step.$id,
+          products: step.products.map((p) => p.$id),
+        },
+        permissions: [Permission.read(Role.user(user!.$id))],
+      });
+
+      // B. Update the actual step with NEW values
       return await tables.updateRow<
         Omit<ModelCreate<Steps>, "regiment" | "products"> & {
           products: string[];
@@ -704,7 +758,6 @@ function StepSettingsDrawer({
       });
     },
     onSuccess: () => {
-      // Invalidate both the specific step and the parent routine
       queryClient.invalidateQueries({ queryKey: queryKeys.step(step.$id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.routine(routineId) });
       onOpenChange(false);
@@ -790,6 +843,93 @@ function StepSettingsDrawer({
                   </div>
                 )}
               />
+
+              {/* Full History Diff Timeline */}
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-2">
+                  <History className="text-primary size-5" />
+                  <h3 className="text-small font-bold uppercase tracking-wider">
+                    Product Evolution
+                  </h3>
+                  <Chip size="sm" variant="flat" className="h-5 text-[10px]">
+                    {Math.max(0, (step.histories?.length || 0) - 1)} Changes
+                  </Chip>
+                </div>
+
+                {step.histories
+                  ?.slice(1)
+                  .reverse()
+                  .map((currentEntry) => {
+                    // Because we sliced and reversed, we need to find the "previous"
+                    // entry relative to the original array order.
+                    // Original index of currentEntry is:
+                    const originalIndex = step.histories.indexOf(currentEntry);
+                    const previousEntry = step.histories[originalIndex - 1];
+
+                    const { added, removed } = getProductDiff(
+                      currentEntry.products,
+                      previousEntry.products,
+                    );
+
+                    const hasChanges = added.length > 0 || removed.length > 0;
+                    if (!hasChanges) return null; // Skip if no products actually changed
+
+                    return (
+                      <div
+                        key={currentEntry.$id}
+                        className="relative pl-6 border-l-2 border-divider pb-2 ml-2"
+                      >
+                        {/* Timeline Dot */}
+                        <div className="absolute -left-2.25 top-1 w-4 h-4 rounded-full bg-background border-2 border-primary" />
+
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-small font-bold">
+                              Product Update
+                            </span>
+                            <span className="text-tiny text-default-400 font-mono">
+                              {new Date(currentEntry.$createdAt).toLocaleString(
+                                [],
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {added.map((p) => (
+                              <Chip
+                                key={`add-${p.$id}`}
+                                size="sm"
+                                color="success"
+                                variant="flat"
+                                startContent={<Plus size={12} />}
+                              >
+                                {p.name}
+                              </Chip>
+                            ))}
+                            {removed.map((p) => (
+                              <Chip
+                                key={`rem-${p.$id}`}
+                                size="sm"
+                                color="danger"
+                                variant="flat"
+                                className="line-through"
+                                startContent={<Minus size={12} />}
+                              >
+                                {p.name}
+                              </Chip>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
 
               <div className="pt-4 border-t border-divider">
                 <Button

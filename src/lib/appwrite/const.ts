@@ -8,6 +8,7 @@ export const tableIds = {
   routines: "routines",
   regiments: "regiments",
   steps: "steps",
+  stepsHistory: "steps_history",
   wishlist: "wishlist_products",
   profiles: "profiles",
   brands: "brands",

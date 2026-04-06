@@ -195,6 +195,18 @@
                     "twoWayKey": "userProducts",
                     "onDelete": "setNull",
                     "side": "parent"
+                },
+                {
+                    "key": "stepsHistories",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "steps_history",
+                    "relationType": "manyToMany",
+                    "twoWay": true,
+                    "twoWayKey": "products",
+                    "onDelete": "setNull",
+                    "side": "child"
                 }
             ],
             "indexes": [
@@ -480,6 +492,18 @@
                     "size": 255,
                     "default": null,
                     "encrypt": false
+                },
+                {
+                    "key": "histories",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "steps_history",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "step",
+                    "onDelete": "cascade",
+                    "side": "child"
                 }
             ],
             "indexes": []
@@ -851,6 +875,41 @@
                     "size": 32,
                     "default": null,
                     "encrypt": false
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "steps_history",
+            "$permissions": [],
+            "databaseId": "skincare-buddy",
+            "name": "steps_history",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "step",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "steps",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "histories",
+                    "onDelete": "cascade",
+                    "side": "parent"
+                },
+                {
+                    "key": "products",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "products",
+                    "relationType": "manyToMany",
+                    "twoWay": true,
+                    "twoWayKey": "stepsHistories",
+                    "onDelete": "setNull",
+                    "side": "parent"
                 }
             ],
             "indexes": []
