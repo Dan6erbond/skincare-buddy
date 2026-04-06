@@ -51,6 +51,7 @@ import { CreateProductModal } from "@/components/product/create-modal";
 import Link from "next/link";
 import { Products } from "@/lib/appwrite/types";
 import { Rating } from "@/components/ui/rating";
+import { RemoveFromWishlistModal } from "@/components/wishlist/remove-modal";
 import { getExpiryDate } from "@/lib/product/utils";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
@@ -236,7 +237,17 @@ export default function Page() {
         key: "actions",
         label: "Actions",
         icon: <MoreHorizontal size={16} />,
-        Cell: ({ product }) => <AddToWishlistModal product={product} />,
+        Cell: ({ product }) =>
+          product.wishlistProducts.length ? (
+            <RemoveFromWishlistModal
+              wishlistItem={{
+                ...product.wishlistProducts[0],
+                product,
+              }}
+            />
+          ) : (
+            <AddToWishlistModal product={product} />
+          ),
       },
       {
         key: "archivedAt",
@@ -294,6 +305,7 @@ export default function Page() {
               "units.*",
               "catalogProduct.*",
               "catalogBrand.*",
+              "wishlistProducts.*",
             ]),
             ...orderQueries,
             Query.orderAsc("$updatedAt"),

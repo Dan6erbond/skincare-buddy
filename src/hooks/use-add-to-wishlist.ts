@@ -25,7 +25,9 @@ export const useAddToWishlist = ({
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (
+      props?: Pick<AddToWishlistProps, "name" | "product">,
+    ) => {
       if (!user?.$id) throw new Error("User not authenticated");
 
       return await tables.createRow({
@@ -46,6 +48,7 @@ export const useAddToWishlist = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.wishlist() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products() });
       addToast({
         title: "Added to Wishlist",
         description: `${product?.name || name} is now on your list.`,

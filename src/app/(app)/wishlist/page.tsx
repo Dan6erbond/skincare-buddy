@@ -2,20 +2,8 @@
 
 import * as queryKeys from "@/lib/query/keys";
 
-import {
-  Card,
-  CardBody,
-  Chip,
-  Skeleton,
-  Spinner,
-  addToast,
-} from "@heroui/react";
+import { Card, CardBody, Chip, Skeleton, Spinner } from "@heroui/react";
 import { databaseId, tableIds } from "@/lib/appwrite/const";
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
 
 import { CreateWishlistItemDrawer } from "@/components/wishlist/create-drawer";
 import { Heart } from "lucide-react";
@@ -25,12 +13,13 @@ import { Ref } from "react";
 import { WishlistProducts } from "@/lib/appwrite/types";
 import { useAppwrite } from "@/contexts/appwrite";
 import { useAuth } from "@/contexts/auth";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useInfiniteScroll } from "@heroui/use-infinite-scroll";
+import { useRemoveFromWishlist } from "@/hooks/use-remove-from-wishlist";
 
 export default function Page() {
   const { user } = useAuth();
   const { tables } = useAppwrite();
-  const queryClient = useQueryClient();
   const limit = 12;
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
@@ -68,38 +57,7 @@ export default function Page() {
     onLoadMore: fetchNextPage,
   });
 
-  const { mutate: removeFromWishlist } = useMutation({
-    mutationFn: async (item: WishlistProducts) => {
-      // If it has a linked product, hard delete.
-      // If it's a custom item (has a name), soft delete.
-      if (item.product?.$id) {
-        return await tables.deleteRow({
-          databaseId,
-          tableId: tableIds.wishlist,
-          rowId: item.$id,
-        });
-      }
-
-      return await tables.updateRow({
-        databaseId,
-        tableId: tableIds.wishlist,
-        rowId: item.$id,
-        data: {
-          deletedAt: new Date().toISOString(),
-        },
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.wishlist(),
-      });
-      addToast({
-        title: "Removed",
-        description: "Moved to history.",
-        color: "warning",
-      });
-    },
-  });
+  const { mutate: removeFromWishlist } = useRemoveFromWishlist();
 
   return (
     <main className="flex flex-col gap-8 p-4 md:p-8 container mx-auto w-full">

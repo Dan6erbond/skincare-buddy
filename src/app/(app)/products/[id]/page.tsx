@@ -59,6 +59,7 @@ import { ArchiveProductModal } from "@/components/product/archive-modal";
 import { ModelCreate } from "@/lib/appwrite/utils";
 import { ProductDescription } from "./description";
 import { Rating } from "@/components/ui/rating";
+import { RemoveFromWishlistModal } from "@/components/wishlist/remove-modal";
 import { categories } from "@/lib/product/const";
 import { getExpiryDate } from "@/lib/product/utils";
 import { useAddToWishlist } from "@/hooks/use-add-to-wishlist";
@@ -112,7 +113,7 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
         databaseId,
         tableId: tableIds.products,
         rowId: id,
-        queries: [Query.select(["*", "units.*"])],
+        queries: [Query.select(["*", "units.*", "wishlistProducts.*"])],
       }),
   });
 
@@ -161,7 +162,7 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
         (u) => u.$id !== unitId && !u.finishedAt,
       );
 
-      if (!remainingUnits?.length) {
+      if (!remainingUnits?.length && !product?.wishlistProducts.length) {
         wishlistPrompt.onOpen();
       }
     },
@@ -295,7 +296,13 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
                   {product.name}
                 </h1>
                 <div className="flex items-center gap-1 mb-2">
-                  <AddToWishlistModal product={product} />
+                  {product.wishlistProducts.length ? (
+                    <RemoveFromWishlistModal
+                      wishlistItem={{ ...product.wishlistProducts[0], product }}
+                    />
+                  ) : (
+                    <AddToWishlistModal product={product} />
+                  )}
                   <EditProductModal product={product} />
                   <ArchiveProductModal product={product} />
                 </div>
@@ -534,7 +541,7 @@ export default function Page({ params }: PageProps<"/products/[id]">) {
               color="primary"
               variant="shadow"
               isLoading={addToWishlist.isPending}
-              onPress={() => addToWishlist.mutate()}
+              onPress={() => addToWishlist.mutate(undefined)}
               startContent={<Heart size={18} />}
               className="font-bold uppercase"
             >

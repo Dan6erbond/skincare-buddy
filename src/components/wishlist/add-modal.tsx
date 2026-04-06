@@ -37,12 +37,7 @@ export function AddToWishlistModal({ product }: Props) {
           onPress={onOpen}
           className="rounded-full"
         >
-          <Heart
-            size={16}
-            fill={
-              product.rating && product.rating > 4 ? "currentColor" : "none"
-            }
-          />
+          <Heart className="size-4" />
         </Button>
       </Tooltip>
 
@@ -91,7 +86,7 @@ export function AddToWishlistModal({ product }: Props) {
                 <Button
                   color="danger"
                   variant="shadow"
-                  onPress={() => mutate()}
+                  onPress={() => mutate(undefined)}
                   isLoading={isPending}
                   startContent={<Plus size={18} />}
                   className="font-bold uppercase"
