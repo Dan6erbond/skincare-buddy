@@ -14,7 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { Button, Card, CardBody, Image, Skeleton } from "@heroui/react";
-import { bucketId, databaseId, tableIds } from "@/lib/appwrite/const";
+import { databaseId, tableIds } from "@/lib/appwrite/const";
 
 import { InstallModal } from "@/components/ui/install-modal";
 import { JournalEntries } from "@/lib/appwrite/types";
